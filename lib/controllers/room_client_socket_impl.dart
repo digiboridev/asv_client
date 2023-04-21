@@ -19,6 +19,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   final String clientId = Random().nextInt(1000000).toString();
 
   late final Socket _socket;
+  late final Timer _signalTimer;
 
   // Connection status section
   @override
@@ -43,8 +44,13 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     _socket.onAny((event, data) {
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
-      debugPrint('event: $event, data: $data');
+      if (roomEvent is ClientJoin) _socket.emit('presence_signal', clientId);
+      // debugPrint('event: $event, data: $data');
       notifyListeners();
+    });
+
+    _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _socket.emit('presence_signal', clientId);
     });
   }
 
@@ -52,6 +58,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   void dispose() {
     _socket.dispose();
     _eventsStreamController.close();
+    _signalTimer.cancel();
     super.dispose();
   }
 
@@ -88,10 +95,11 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   }
 
   @override
-  Future sendCandidate(String toClientId, RTCIceCandidate candidate) async {
+  Future sendCandidate(String toClientId, PcType pcType, RTCIceCandidate candidate) async {
     _socket.emit('rtc_candidate', {
       'from': clientId,
       'to': toClientId,
+      'pc_type': pcType.name,
       'candidate': candidate.toMap(),
     });
   }
@@ -100,13 +108,18 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 RoomEvent? _eventParser({required String event, required dynamic data}) {
   try {
     switch (event) {
-      case 'join':
+      case 'presence_join':
         return ClientJoin(
           clientId: data['clientId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
-      case 'leave':
+      case 'presence_leave':
         return ClientLeave(
+          clientId: data['clientId'],
+          time: DateTime.fromMillisecondsSinceEpoch(data['time']),
+        );
+      case 'presence_signal':
+        return ClientSignal(
           clientId: data['clientId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
@@ -143,6 +156,7 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
       case 'rtc_candidate':
         return MeetConnectionCandidate(
           clientId: data['from'],
+          pcType: PcType.values.byName(data['pc_type']),
           candidate: RTCIceCandidate(
             data['candidate']['candidate'],
             data['candidate']['sdpMid'],

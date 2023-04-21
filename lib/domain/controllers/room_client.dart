@@ -3,6 +3,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+enum PcType { tx, rx }
+
 abstract class RoomClient extends ChangeNotifier {
   bool get isConnected;
   bool get isDisconnected;
@@ -15,7 +17,7 @@ abstract class RoomClient extends ChangeNotifier {
   Future sendTypingCancel();
   Future sendOffer(String toClientId, RTCSessionDescription offer);
   Future sendAnswer(String toClientId, RTCSessionDescription answer);
-  Future sendCandidate(String toClientId, RTCIceCandidate candidate);
+  Future sendCandidate(String toClientId, PcType pcType, RTCIceCandidate candidate);
 }
 
 abstract class RoomEvent {}
@@ -69,22 +71,23 @@ class ClientSignal extends PresenceEvent {
   ClientSignal({required super.clientId, required super.time});
 }
 
-abstract class MeetConnection extends RoomEvent {}
+abstract class RTCEvent extends RoomEvent {}
 
-class MeetConnectionOffer extends MeetConnection {
+class MeetConnectionOffer extends RTCEvent {
   MeetConnectionOffer({required this.offer, required this.clientId});
   final RTCSessionDescription offer;
   final String clientId;
 }
 
-class MeetConnectionAnswer extends MeetConnection {
+class MeetConnectionAnswer extends RTCEvent {
   MeetConnectionAnswer({required this.answer, required this.clientId});
   final RTCSessionDescription answer;
   final String clientId;
 }
 
-class MeetConnectionCandidate extends MeetConnection {
-  MeetConnectionCandidate({required this.candidate, required this.clientId});
-  final RTCIceCandidate candidate;
+class MeetConnectionCandidate extends RTCEvent {
+  MeetConnectionCandidate({required this.pcType, required this.clientId, required this.candidate});
+  final PcType pcType;
   final String clientId;
+  final RTCIceCandidate candidate;
 }

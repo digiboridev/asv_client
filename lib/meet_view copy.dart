@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:asv_client/core/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -9,140 +8,136 @@ import 'package:asv_client/utils/first_where_or_null.dart';
 class MeetConnection {
   MeetConnection({
     required this.clientId,
+    // required this.master,
     required this.roomClient,
     this.localstream,
+    this.fromOffer,
   }) {
-    renderer = RTCVideoRenderer();
-    renderer.initialize();
-    _eventSubscription = roomClient.eventStream.listen(eventHandler);
     init();
   }
   final String clientId;
   // final bool master;
   final RoomClient roomClient;
-  MediaStream? localstream;
+  final RTCSessionDescription? fromOffer;
+  final MediaStream? localstream;
 
-  RTCPeerConnection? _txPc;
-  RTCPeerConnection? _rxPc;
-
-  late final RTCVideoRenderer renderer;
+  late final RTCPeerConnection _peerConnection;
+  late final RTCVideoRenderer _renderer;
   late final StreamSubscription<RoomEvent> _eventSubscription;
 
   init() async {
-    if (localstream != null) initTx();
-  }
+    final configuration = {
+      'iceServers': [
+        {'urls': 'stun:stun.l.google.com:19302'}
+      ],
+    };
+    _renderer = RTCVideoRenderer();
+    _renderer.initialize();
 
-  setStream(MediaStream? stream) {
-    if (stream != null) {
-      localstream = stream;
-      _txPc?.close();
-      _txPc = null;
-      initTx();
+    _peerConnection = await createPeerConnection(
+      configuration,
+      {
+        'mandatory': {
+          'OfferToReceiveAudio': true,
+          'OfferToReceiveVideo': true,
+        },
+        'optional': [],
+      },
+    );
+
+    if (localstream != null) {
+      _peerConnection.addStream(localstream!);
+      // localstream!.getTracks().forEach((track) async {
+      //   await _peerConnection.addTrack(track, localstream!);
+      // });
+    }
+
+    _eventSubscription = roomClient.eventStream.listen(eventHandler);
+
+    _peerConnection.onIceConnectionState = (state) {
+      print('onIceConnectionState: $state');
+    };
+
+    _peerConnection.onIceGatheringState = (state) {
+      print('onIceGatheringState: $state');
+    };
+
+    _peerConnection.onConnectionState = (state) {
+      print('onConnectionState: $state');
+    };
+
+    _peerConnection.onIceCandidate = (candidate) async {
+      print('onIceCandidate: $candidate');
+      await Future.delayed(Duration(seconds: 1));
+      roomClient.sendCandidate(clientId, candidate);
+    };
+
+    _peerConnection.onTrack = (RTCTrackEvent event) {
+      print('onTrack: $event');
+      // _renderer.srcObject = event.streams[0];
+    };
+
+    _peerConnection.onAddStream = (MediaStream stream) {
+      print('onAddStream: $stream');
+      _renderer.srcObject = stream;
+    };
+
+    _peerConnection.onRemoveStream = (MediaStream stream) {
+      print('onRemoveStream: $stream');
+      _renderer.srcObject = null;
+    };
+
+    _peerConnection.onAddTrack = (MediaStream track, MediaStreamTrack stream) {
+      print('onAddTrack: $track, $stream');
+      // _renderer.srcObject = track;
+    };
+
+    if (fromOffer is RTCSessionDescription) {
+      await answer();
     } else {
-      _txPc!.removeStream(localstream!);
-      // _txPc?.close();
-      // _txPc = null;
-      // localstream = null;
+      await call();
     }
   }
 
-  initTx() async {
-    _txPc = await createPeerConnection(peerConfig);
-
-    // _txPc!.onIceCandidate = (candidate) {
-    //   debugPrint('onIceCandidate tx: $candidate');
-    //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
-    // };
-
-    _txPc!.onConnectionState = (state) {
-      debugPrint('onConnectionState tx: $state');
-    };
-
-    _txPc!.addStream(localstream!);
-
-    final offer = await _txPc!.createOffer();
-    await _txPc!.setLocalDescription(offer);
-
-    roomClient.sendOffer(clientId, offer);
-
-    await roomClient.eventStream.firstWhere((event) => event is MeetConnectionAnswer && event.clientId == clientId).timeout(const Duration(seconds: 1),
-        onTimeout: () {
-      // Check if the pc is not null because it could be disposed
-      if (_txPc != null) {
-        // Close the pc and try again
-        _txPc!.close();
-        _txPc = null;
-        initTx();
-      }
-      debugPrint('Timeout waiting for answer');
-      throw TimeoutException('Timeout waiting for answer');
-    }).then((answer) {
-      debugPrint('Received answer');
-      // Check if the pc is not null because it could be disposed
-      if (_txPc != null) {
-        _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
-      }
-    }).onError((error, stackTrace) => null);
+  call() async {
+    RTCSessionDescription offer = await _peerConnection.createOffer();
+    await _peerConnection.setLocalDescription(offer);
+    await roomClient.sendOffer(clientId, offer);
   }
 
-  initRx(RTCSessionDescription offer) async {
-    _rxPc?.close();
-    _rxPc = await createPeerConnection(peerConfig);
-
-    _rxPc!.onIceCandidate = (candidate) {
-      debugPrint('onIceCandidate rx: $candidate');
-      roomClient.sendCandidate(clientId, PcType.rx, candidate);
-    };
-
-    _rxPc!.onConnectionState = (state) {
-      debugPrint('onConnectionState rx: $state');
-    };
-
-    _rxPc!.onAddStream = (stream) {
-      debugPrint('onAddStream rx: $stream');
-      renderer.srcObject = stream;
-    };
-
-    _rxPc!.onRemoveStream = (stream) {
-      debugPrint('onRemoveStream rx: $stream');
-      renderer.srcObject = null;
-    };
-
-    _rxPc!.setRemoteDescription(offer);
-    final answer = await _rxPc!.createAnswer();
-    await _rxPc!.setLocalDescription(answer);
-    roomClient.sendAnswer(clientId, answer);
+  answer() async {
+    await _peerConnection.setRemoteDescription(fromOffer!);
+    RTCSessionDescription answer = await _peerConnection.createAnswer();
+    await _peerConnection.setLocalDescription(answer);
+    await roomClient.sendAnswer(clientId, answer);
   }
 
   eventHandler(RoomEvent event) {
-    if (event is MeetConnectionOffer && event.clientId == clientId) {
-      initRx(event.offer);
+    if (event is MeetConnectionAnswer) {
+      if (event.clientId == clientId) {
+        _peerConnection.setRemoteDescription(event.answer);
+        // _peerConnection.onIceCandidate = (candidate) {
+        //   print('onIceCandidate: $candidate');
+        //   roomClient.sendCandidate(clientId, candidate);
+        // };
+      }
     }
 
     if (event is MeetConnectionCandidate) {
       if (event.clientId == clientId) {
-        // Pay attention to the pcType here
-        // RX candidate is for TX pc and vice versa
-        if (event.pcType == PcType.tx) {
-          if (_rxPc != null) {
-            _rxPc!.addCandidate(event.candidate);
-          }
-        } else {
-          if (_txPc != null) {
-            _txPc!.addCandidate(event.candidate);
-          }
-        }
+        _peerConnection.addCandidate(event.candidate);
       }
     }
   }
 
+  setLocalStream(MediaStream stream) {
+    _peerConnection.addStream(stream);
+  }
+
   dispose() {
-    _rxPc?.close();
-    _rxPc = null;
-    _txPc?.close();
-    _txPc = null;
-    renderer.srcObject = null;
-    renderer.dispose();
+    _peerConnection.close();
+    _renderer.srcObject = null;
+    _renderer.dispose();
     _eventSubscription.cancel();
   }
 }
@@ -171,16 +166,7 @@ class _MeetViewState extends State<MeetView> {
       if (event is ClientJoin) {
         MeetConnection? connection = connections.firstWhereOrNull((connection) => connection.clientId == event.clientId);
         if (connection != null) return;
-        connections.add(MeetConnection(
-          clientId: event.clientId,
-          roomClient: widget.roomClient,
-          localstream: localStream,
-        ));
-      }
-
-      if (event is ClientSignal) {
-        MeetConnection? connection = connections.firstWhereOrNull((connection) => connection.clientId == event.clientId);
-        if (connection != null) return;
+        // if (localStream == null) await streamCamera();
         connections.add(MeetConnection(
           clientId: event.clientId,
           roomClient: widget.roomClient,
@@ -194,6 +180,15 @@ class _MeetViewState extends State<MeetView> {
         connections.remove(connection);
       }
 
+      if (event is MeetConnectionOffer) {
+        // if (localStream == null) await streamDisplay();
+        connections.add(MeetConnection(
+          clientId: event.clientId,
+          roomClient: widget.roomClient,
+          fromOffer: event.offer,
+          localstream: localStream,
+        ));
+      }
       setState(() {});
     });
 
@@ -211,7 +206,7 @@ class _MeetViewState extends State<MeetView> {
     // });
     localRenderer.srcObject = stream;
     for (var connection in connections) {
-      connection.setStream(stream);
+      connection.setLocalStream(stream);
     }
   }
 
@@ -224,14 +219,11 @@ class _MeetViewState extends State<MeetView> {
     // });
     localRenderer.srcObject = stream;
     for (var connection in connections) {
-      connection.setStream(stream);
+      connection.setLocalStream(stream);
     }
   }
 
   stopStream() async {
-    for (var connection in connections) {
-      connection.setStream(null);
-    }
     if (kIsWeb) {
       localStream?.getTracks().forEach((track) => track.stop());
     }
@@ -284,7 +276,10 @@ class _MeetViewState extends State<MeetView> {
                         color: Colors.blue,
                         width: 100,
                         height: 100,
-                        child: RTCVideoView(connection.renderer),
+                        child: RTCVideoView(
+                          connection._renderer,
+                          mirror: true,
+                        ),
                       ),
                     )
                     .toList()
