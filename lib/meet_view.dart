@@ -91,11 +91,11 @@ class MeetConnection {
         return event is MeetConnectionAnswer && event.clientId == clientId;
       }).timeout(const Duration(seconds: 5));
 
+      txPc.setLocalDescription(offer);
+
       debugPrint('Received answer');
       // Check if peer is not null because it could be disposed while waiting for answer
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
-
-      txPc.setLocalDescription(offer);
 
       // Send stored candidates
       // for (var candidate in candidates) {
