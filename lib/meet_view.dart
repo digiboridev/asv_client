@@ -56,14 +56,14 @@ class MeetConnection {
       }
     };
 
-    List<RTCIceCandidate> candidates = [];
+    // List<RTCIceCandidate> candidates = [];
 
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
-      // Future.delayed(const Duration(seconds: 1)).then((value) {
-      roomClient.sendCandidate(clientId, PcType.tx, candidate);
-      candidates.add(candidate);
-      // });
+      Future.delayed(const Duration(seconds: 1)).then((value) {
+        roomClient.sendCandidate(clientId, PcType.tx, candidate);
+        // candidates.add(candidate);
+      });
     };
 
     stream.getTracks().forEach((track) {
@@ -86,7 +86,7 @@ class MeetConnection {
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
 
       // Send stored candidates
-      candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
+      // candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
