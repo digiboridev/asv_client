@@ -56,11 +56,14 @@ class MeetConnection {
       }
     };
 
+    List<RTCIceCandidate> candidates = [];
+
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
       // Future.delayed(const Duration(seconds: 1)).then((value) {
+      // roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      candidates.add(candidate);
       // });
-      roomClient.sendCandidate(clientId, PcType.tx, candidate);
     };
 
     stream.getTracks().forEach((track) {
@@ -76,11 +79,14 @@ class MeetConnection {
       // Wait for answer
       RoomEvent answer = await roomClient.eventStream.firstWhere((event) {
         return event is MeetConnectionAnswer && event.clientId == clientId;
-      }).timeout(const Duration(seconds: 1));
+      }).timeout(const Duration(seconds: 5));
 
       debugPrint('Received answer');
       // Check if peer is not null because it could be disposed while waiting for answer
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
+
+      // Send stored candidates
+      candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
@@ -96,8 +102,6 @@ class MeetConnection {
 
     rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
-      // Future.delayed(const Duration(seconds: 1)).then((value) {
-      // });
       roomClient.sendCandidate(clientId, PcType.rx, candidate);
     };
 
@@ -127,6 +131,7 @@ class MeetConnection {
 
     if (event is MeetConnectionCandidate) {
       if (event.clientId == clientId) {
+        debugPrint('Received candidate');
         // Pay attention to the pcType here
         // RX candidate is for TX pc and vice versa
         if (event.pcType == PcType.tx) {
