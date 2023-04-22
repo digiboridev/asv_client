@@ -96,7 +96,10 @@ class MeetConnection {
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
 
       // Send stored candidates
-      candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
+      for (var candidate in candidates) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      }
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
