@@ -53,6 +53,13 @@ class MeetConnection {
       }
     };
 
+    txPc.onIceCandidate = (candidate) {
+      debugPrint('onIceCandidate tx: $candidate');
+      Future.delayed(const Duration(seconds: 1)).then((value) {
+        roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      });
+    };
+
     stream.getTracks().forEach((track) {
       txPc.addTrack(track, stream);
     });
@@ -86,7 +93,9 @@ class MeetConnection {
 
     rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
-      roomClient.sendCandidate(clientId, PcType.rx, candidate);
+      Future.delayed(const Duration(seconds: 1)).then((value) {
+        roomClient.sendCandidate(clientId, PcType.rx, candidate);
+      });
     };
 
     rxPc.onConnectionState = (state) {
