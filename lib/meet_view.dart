@@ -56,22 +56,11 @@ class MeetConnection {
       }
     };
 
-    // var remoteStreamCompleter = Completer();
-    // List<RTCIceCandidate> candidates = [];
-
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
       // Future.delayed(const Duration(seconds: 1)).then((value) {
       roomClient.sendCandidate(clientId, PcType.tx, candidate);
       // });
-      // candidates.add(candidate);
-    };
-
-    txPc.onIceGatheringState = (state) {
-      debugPrint('onIceGatheringState tx: $state');
-      // if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
-      //   remoteStreamCompleter.complete();
-      // }
     };
 
     stream.getTracks().forEach((track) {
@@ -79,9 +68,7 @@ class MeetConnection {
     });
 
     final offer = await txPc.createOffer();
-    // txPc.setLocalDescription(offer);
-
-    // await remoteStreamCompleter.future;
+    txPc.setLocalDescription(offer);
     roomClient.sendOffer(clientId, offer);
 
     // Retryable function to wait for answer
@@ -91,17 +78,9 @@ class MeetConnection {
         return event is MeetConnectionAnswer && event.clientId == clientId;
       }).timeout(const Duration(seconds: 5));
 
-      txPc.setLocalDescription(offer);
-
       debugPrint('Received answer');
       // Check if peer is not null because it could be disposed while waiting for answer
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
-
-      // Send stored candidates
-      // for (var candidate in candidates) {
-      //   await Future.delayed(const Duration(milliseconds: 100));
-      //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
-      // }
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
@@ -123,10 +102,6 @@ class MeetConnection {
     rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
       roomClient.sendCandidate(clientId, PcType.rx, candidate);
-    };
-
-    rxPc.onIceGatheringState = (state) {
-      debugPrint('onIceGatheringState rx: $state');
     };
 
     rxPc.onConnectionState = (state) {
@@ -245,6 +220,10 @@ class _MeetViewState extends State<MeetView> {
 
       setState(() {});
     });
+
+    // Timer.periodic(const Duration(seconds: 1), (timer) {
+    //   setState(() {});
+    // });
   }
 
   Future streamCamera() async {
