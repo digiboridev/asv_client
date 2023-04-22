@@ -51,6 +51,9 @@ class MeetConnection {
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         if (_txPc != null) initTx(stream);
       }
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        if (_txPc != null) initTx(stream);
+      }
     };
 
     txPc.onIceCandidate = (candidate) {
@@ -230,6 +233,7 @@ class _MeetViewState extends State<MeetView> {
     }
     localRenderer.srcObject = null;
     localStream?.dispose();
+    localStream = null;
   }
 
   @override
