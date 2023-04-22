@@ -56,14 +56,22 @@ class MeetConnection {
       }
     };
 
-    // List<RTCIceCandidate> candidates = [];
+    var remoteStreamCompleter = Completer();
+    List<RTCIceCandidate> candidates = [];
 
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
-      Future.delayed(const Duration(seconds: 1)).then((value) {
-        roomClient.sendCandidate(clientId, PcType.tx, candidate);
-        // candidates.add(candidate);
-      });
+      // Future.delayed(const Duration(seconds: 1)).then((value) {
+      // roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      candidates.add(candidate);
+      // });
+    };
+
+    txPc.onIceGatheringState = (state) {
+      debugPrint('onIceGatheringState tx: $state');
+      if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
+        remoteStreamCompleter.complete();
+      }
     };
 
     stream.getTracks().forEach((track) {
@@ -72,6 +80,8 @@ class MeetConnection {
 
     final offer = await txPc.createOffer();
     txPc.setLocalDescription(offer);
+
+    await remoteStreamCompleter.future;
     roomClient.sendOffer(clientId, offer);
 
     // Retryable function to wait for answer
@@ -86,7 +96,7 @@ class MeetConnection {
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
 
       // Send stored candidates
-      // candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
+      candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
@@ -97,12 +107,21 @@ class MeetConnection {
 
   initRx(RTCSessionDescription offer) async {
     _rxPc?.close();
+
+    debugPrint('RX before createPeerConnection');
+
     RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
     _rxPc = rxPc;
+
+    debugPrint('RX after createPeerConnection');
 
     rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
       roomClient.sendCandidate(clientId, PcType.rx, candidate);
+    };
+
+    rxPc.onIceGatheringState = (state) {
+      debugPrint('onIceGatheringState rx: $state');
     };
 
     rxPc.onConnectionState = (state) {
@@ -118,10 +137,19 @@ class MeetConnection {
       renderer.srcObject = track.streams.first;
     };
 
-    rxPc.setRemoteDescription(offer);
+    await rxPc.setRemoteDescription(offer);
+
+    debugPrint('RX before createAnswer');
+
     final answer = await rxPc.createAnswer();
-    rxPc.setLocalDescription(answer);
+
+    debugPrint('RX after createAnswer');
+
+    await rxPc.setLocalDescription(answer);
+
     roomClient.sendAnswer(clientId, answer);
+
+    debugPrint('RX after sendAnswer');
   }
 
   eventHandler(RoomEvent event) {
@@ -131,16 +159,21 @@ class MeetConnection {
 
     if (event is MeetConnectionCandidate) {
       if (event.clientId == clientId) {
-        debugPrint('Received candidate');
         // Pay attention to the pcType here
         // RX candidate is for TX pc and vice versa
         if (event.pcType == PcType.tx) {
           if (_rxPc != null) {
             _rxPc!.addCandidate(event.candidate);
+            debugPrint('RX candidate is received');
+          } else {
+            debugPrint('RX candidate is loss');
           }
         } else {
           if (_txPc != null) {
             _txPc!.addCandidate(event.candidate);
+            debugPrint('TX candidate is received');
+          } else {
+            debugPrint('TX candidate is loss');
           }
         }
       }
