@@ -86,6 +86,7 @@ class MeetConnection {
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
 
       // Send stored candidates
+      await Future.delayed(const Duration(milliseconds: 300));
       candidates.forEach((candidate) => roomClient.sendCandidate(clientId, PcType.tx, candidate));
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
