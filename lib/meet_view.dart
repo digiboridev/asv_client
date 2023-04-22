@@ -10,107 +10,101 @@ class MeetConnection {
   MeetConnection({
     required this.clientId,
     required this.roomClient,
-    this.localstream,
+    MediaStream? txStream,
   }) {
     renderer = RTCVideoRenderer();
     renderer.initialize();
     _eventSubscription = roomClient.eventStream.listen(eventHandler);
-    init();
-  }
-  final String clientId;
-  // final bool master;
-  final RoomClient roomClient;
-  MediaStream? localstream;
 
-  RTCPeerConnection? _txPc;
-  RTCPeerConnection? _rxPc;
+    // Start transmitting if tx stream provided
+    if (txStream != null) initTx(txStream);
+  }
+
+  final String clientId;
+  final RoomClient roomClient;
 
   late final RTCVideoRenderer renderer;
   late final StreamSubscription<RoomEvent> _eventSubscription;
 
-  init() async {
-    if (localstream != null) initTx();
+  RTCPeerConnection? _txPc;
+  RTCPeerConnection? _rxPc;
+
+  /// Set or remove stream to transmit.
+  ///
+  /// If stream is null, the current stream will be removed.
+  ///
+  /// If stream is not null, the current stream will be replaced
+  set setTxStream(MediaStream? stream) {
+    _txPc?.close();
+    _txPc = null;
+    if (stream != null) initTx(stream);
   }
 
-  setStream(MediaStream? stream) {
-    if (stream != null) {
-      localstream = stream;
-      _txPc?.close();
-      _txPc = null;
-      initTx();
-    } else {
-      _txPc!.removeStream(localstream!);
-      // _txPc?.close();
-      // _txPc = null;
-      // localstream = null;
-    }
-  }
+  initTx(MediaStream stream) async {
+    _txPc?.close();
+    RTCPeerConnection txPc = await createPeerConnection(peerConfig);
+    _txPc = txPc;
 
-  initTx() async {
-    _txPc = await createPeerConnection(peerConfig);
-
-    // _txPc!.onIceCandidate = (candidate) {
-    //   debugPrint('onIceCandidate tx: $candidate');
-    //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
-    // };
-
-    _txPc!.onConnectionState = (state) {
+    txPc.onConnectionState = (state) {
       debugPrint('onConnectionState tx: $state');
+      // Recover connection if lost
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        if (_txPc != null) initTx(stream);
+      }
     };
 
-    _txPc!.addStream(localstream!);
+    stream.getTracks().forEach((track) {
+      txPc.addTrack(track, stream);
+    });
 
-    final offer = await _txPc!.createOffer();
-    await _txPc!.setLocalDescription(offer);
-
+    final offer = await txPc.createOffer();
+    txPc.setLocalDescription(offer);
     roomClient.sendOffer(clientId, offer);
 
-    await roomClient.eventStream.firstWhere((event) => event is MeetConnectionAnswer && event.clientId == clientId).timeout(const Duration(seconds: 1),
-        onTimeout: () {
-      // Check if the pc is not null because it could be disposed
-      if (_txPc != null) {
-        // Close the pc and try again
-        _txPc!.close();
-        _txPc = null;
-        initTx();
-      }
-      debugPrint('Timeout waiting for answer');
-      throw TimeoutException('Timeout waiting for answer');
-    }).then((answer) {
+    // Retryable function to wait for answer
+    try {
+      // Wait for answer
+      RoomEvent answer = await roomClient.eventStream.firstWhere((event) {
+        return event is MeetConnectionAnswer && event.clientId == clientId;
+      }).timeout(const Duration(seconds: 1));
+
       debugPrint('Received answer');
-      // Check if the pc is not null because it could be disposed
-      if (_txPc != null) {
-        _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
-      }
-    }).onError((error, stackTrace) => null);
+      // Check if peer is not null because it could be disposed while waiting for answer
+      if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
+    } on TimeoutException {
+      debugPrint('Timeout waiting for answer');
+      // Check if peer is not null because it could be disposed while waiting for answer
+      // Than retry connection
+      if (_txPc != null) initTx(stream);
+    }
   }
 
   initRx(RTCSessionDescription offer) async {
     _rxPc?.close();
-    _rxPc = await createPeerConnection(peerConfig);
+    RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
+    _rxPc = rxPc;
 
-    _rxPc!.onIceCandidate = (candidate) {
+    rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
       roomClient.sendCandidate(clientId, PcType.rx, candidate);
     };
 
-    _rxPc!.onConnectionState = (state) {
+    rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        _rxPc?.close();
+        renderer.srcObject = null;
+      }
     };
 
-    _rxPc!.onAddStream = (stream) {
-      debugPrint('onAddStream rx: $stream');
-      renderer.srcObject = stream;
+    rxPc.onTrack = (track) {
+      debugPrint('onTrack rx: $track');
+      renderer.srcObject = track.streams.first;
     };
 
-    _rxPc!.onRemoveStream = (stream) {
-      debugPrint('onRemoveStream rx: $stream');
-      renderer.srcObject = null;
-    };
-
-    _rxPc!.setRemoteDescription(offer);
-    final answer = await _rxPc!.createAnswer();
-    await _rxPc!.setLocalDescription(answer);
+    rxPc.setRemoteDescription(offer);
+    final answer = await rxPc.createAnswer();
+    rxPc.setLocalDescription(answer);
     roomClient.sendAnswer(clientId, answer);
   }
 
@@ -160,13 +154,13 @@ class _MeetViewState extends State<MeetView> {
   late final StreamSubscription<RoomEvent> eventSubscription;
   MediaStream? localStream;
   final localRenderer = RTCVideoRenderer();
-  // List<MediaDeviceInfo>? _mediaDevicesList;
   List<MeetConnection> connections = [];
 
   @override
   void initState() {
     super.initState();
     localRenderer.initialize();
+
     eventSubscription = widget.roomClient.eventStream.listen((event) async {
       if (event is ClientJoin) {
         MeetConnection? connection = connections.firstWhereOrNull((connection) => connection.clientId == event.clientId);
@@ -174,7 +168,7 @@ class _MeetViewState extends State<MeetView> {
         connections.add(MeetConnection(
           clientId: event.clientId,
           roomClient: widget.roomClient,
-          localstream: localStream,
+          txStream: localStream,
         ));
       }
 
@@ -184,7 +178,7 @@ class _MeetViewState extends State<MeetView> {
         connections.add(MeetConnection(
           clientId: event.clientId,
           roomClient: widget.roomClient,
-          localstream: localStream,
+          txStream: localStream,
         ));
       }
 
@@ -196,41 +190,31 @@ class _MeetViewState extends State<MeetView> {
 
       setState(() {});
     });
-
-    Timer.periodic(Duration(seconds: 1), (timer) {
-      if (mounted) setState(() {});
-      print('tick');
-    });
   }
 
   Future streamCamera() async {
     stopStream();
     final stream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': true});
-    // setState(() {
     localStream = stream;
-    // });
     localRenderer.srcObject = stream;
     for (var connection in connections) {
-      connection.setStream(stream);
+      connection.setTxStream = stream;
     }
   }
 
   Future streamDisplay() async {
     stopStream();
     final stream = await navigator.mediaDevices.getDisplayMedia({'audio': true, 'video': true});
-
-    // setState(() {
     localStream = stream;
-    // });
     localRenderer.srcObject = stream;
     for (var connection in connections) {
-      connection.setStream(stream);
+      connection.setTxStream = stream;
     }
   }
 
   stopStream() async {
     for (var connection in connections) {
-      connection.setStream(null);
+      connection.setTxStream = null;
     }
     if (kIsWeb) {
       localStream?.getTracks().forEach((track) => track.stop());

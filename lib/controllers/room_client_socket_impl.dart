@@ -36,7 +36,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   init() {
     _socket = io(
-      'http://localhost:3000',
+      'https://asv-socket.onrender.com',
       OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
         {'token': kRoomSocketToken, 'roomId': roomId, 'clientId': clientId},
       ).build(),
