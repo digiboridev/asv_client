@@ -134,8 +134,8 @@ class MeetConnection {
     rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        // _rxPc?.close();
-        // renderer.srcObject = null;
+        _rxPc?.close();
+        renderer.srcObject = null;
       }
     };
 
@@ -189,11 +189,13 @@ class MeetConnection {
         } else {
           if (_txPc != null) {
             debugPrint('TX candidate is received');
-            if (_txRemoteDescriptionSet) {
-              _txPc!.addCandidate(event.candidate);
-            } else {
-              _txPendingCandidates.add(event.candidate);
-            }
+            _txPc!.addCandidate(event.candidate);
+
+            // if (_txRemoteDescriptionSet) {
+            //   _txPc!.addCandidate(event.candidate);
+            // } else {
+            //   _txPendingCandidates.add(event.candidate);
+            // }
           } else {
             debugPrint('TX candidate is loss');
           }
