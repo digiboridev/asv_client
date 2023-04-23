@@ -66,7 +66,10 @@ class MeetConnection {
 
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
+      // Future.delayed(Duration(seconds: 2)).then((value) {
       roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      // });
+      // roomClient.sendCandidate(clientId, PcType.tx, candidate);
     };
 
     List<MediaStreamTrack> txTracks = stream.getTracks();
@@ -151,6 +154,8 @@ class MeetConnection {
       final answer = await _rxPc!.createAnswer();
       await _rxPc!.setLocalDescription(answer);
       roomClient.sendAnswer(clientId, answer);
+
+      await Future.delayed(const Duration(milliseconds: 200));
 
       for (var candidate in _rxPendingCandidates) {
         await _rxPc!.addCandidate(candidate);
