@@ -56,12 +56,12 @@ class MeetConnection {
 
     txPc.onConnectionState = (state) {
       debugPrint('onConnectionState tx: $state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        if (_txPc != null) initTx(stream);
-      }
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
-        if (_txPc != null) initTx(stream);
-      }
+      // if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+      //   if (_txPc != null) initTx(stream);
+      // }
+      // if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+      //   if (_txPc != null) initTx(stream);
+      // }
     };
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
@@ -132,10 +132,10 @@ class MeetConnection {
 
     rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        _rxPc?.close();
-        renderer.srcObject = null;
-      }
+      // if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+      //   _rxPc?.close();
+      //   renderer.srcObject = null;
+      // }
     };
 
     rxPc.onTrack = (track) async {
