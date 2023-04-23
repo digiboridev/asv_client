@@ -65,7 +65,7 @@ class MeetConnection {
     };
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
-      if (candidate.sdpMid != '0') {
+      if (candidate.sdpMid != '1') {
         roomClient.sendCandidate(clientId, PcType.tx, candidate);
       }
     };
