@@ -105,6 +105,7 @@ class MeetConnection {
 
   initRx() async {
     _rxPc?.close();
+    _rxPc = null;
     RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
     _rxPc = rxPc;
 
@@ -115,10 +116,10 @@ class MeetConnection {
 
     rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        _rxPc?.close();
-        renderer.srcObject = null;
-      }
+      // if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+      //   _rxPc?.close();
+      //   renderer.srcObject = null;
+      // }
     };
 
     rxPc.onTrack = (track) {
