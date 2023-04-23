@@ -141,7 +141,6 @@ class MeetConnection {
 
     rxPc.onTrack = (track) async {
       debugPrint('onTrack rx: $track');
-      await Future.delayed(const Duration(milliseconds: 200));
       renderer.srcObject = track.streams.first;
     };
 
@@ -151,17 +150,16 @@ class MeetConnection {
   connectRx(RTCSessionDescription offer) async {
     if (_rxPc != null) {
       await _rxPc!.setRemoteDescription(offer);
-      final answer = await _rxPc!.createAnswer();
-      await _rxPc!.setLocalDescription(answer);
-      roomClient.sendAnswer(clientId, answer);
-
-      await Future.delayed(const Duration(milliseconds: 1000));
 
       for (var candidate in _rxPendingCandidates) {
-        await _rxPc!.addCandidate(candidate);
+        _rxPc!.addCandidate(candidate);
       }
       _rxPendingCandidates.clear();
       _rxRemoteDescriptionSet = true;
+
+      final answer = await _rxPc!.createAnswer();
+      await _rxPc!.setLocalDescription(answer);
+      roomClient.sendAnswer(clientId, answer);
     }
   }
 
