@@ -105,7 +105,7 @@ class MeetConnection {
       if (_txPc != null) {
         await _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
         for (var candidate in _txPendingCandidates) {
-          await _txPc!.addCandidate(candidate);
+          _txPc!.addCandidate(candidate);
         }
         _txPendingCandidates.clear();
         _txRemoteDescriptionSet = true;
