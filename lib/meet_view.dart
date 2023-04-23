@@ -136,8 +136,9 @@ class MeetConnection {
       }
     };
 
-    rxPc.onTrack = (track) {
+    rxPc.onTrack = (track) async {
       debugPrint('onTrack rx: $track');
+      await Future.delayed(const Duration(milliseconds: 200));
       renderer.srcObject = track.streams.first;
     };
 
