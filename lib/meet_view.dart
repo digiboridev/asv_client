@@ -56,7 +56,6 @@ class MeetConnection {
 
     txPc.onConnectionState = (state) {
       debugPrint('onConnectionState tx: $state');
-      // Recover connection if lost
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         if (_txPc != null) initTx(stream);
       }
@@ -143,16 +142,15 @@ class MeetConnection {
   connectRx(RTCSessionDescription offer) async {
     if (_rxPc != null) {
       await _rxPc!.setRemoteDescription(offer);
+      final answer = await _rxPc!.createAnswer();
+      await _rxPc!.setLocalDescription(answer);
+      roomClient.sendAnswer(clientId, answer);
 
       for (var candidate in _rxPendingCandidates) {
         await _rxPc!.addCandidate(candidate);
       }
       _rxPendingCandidates.clear();
       _rxRemoteDescriptionSet = true;
-
-      final answer = await _rxPc!.createAnswer();
-      await _rxPc!.setLocalDescription(answer);
-      roomClient.sendAnswer(clientId, answer);
     }
   }
 
