@@ -64,10 +64,10 @@ class MeetConnection {
       }
     };
 
-    txPc.onIceCandidate = (candidate) {
-      debugPrint('onIceCandidate tx: $candidate');
-      roomClient.sendCandidate(clientId, PcType.tx, candidate);
-    };
+    // txPc.onIceCandidate = (candidate) {
+    //   debugPrint('onIceCandidate tx: $candidate');
+    //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
+    // };
 
     List<MediaStreamTrack> txTracks = stream.getTracks();
     for (var track in txTracks) {
@@ -82,7 +82,12 @@ class MeetConnection {
       debugPrint('Received ready');
     } on TimeoutException {
       debugPrint('Timeout waiting for ready');
-      if (_txPc != null) initTx(stream);
+      if (_txPc != null) {
+        {
+          initTx(stream);
+          return;
+        }
+      }
     }
 
     final offer = await txPc.createOffer();
