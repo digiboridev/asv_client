@@ -58,9 +58,7 @@ class MeetConnection {
 
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
-      Future.delayed(const Duration(milliseconds: 300)).then((value) {
-        roomClient.sendCandidate(clientId, PcType.tx, candidate);
-      });
+      roomClient.sendCandidate(clientId, PcType.tx, candidate);
     };
 
     stream.getTracks().forEach((track) {
