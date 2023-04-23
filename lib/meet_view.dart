@@ -27,7 +27,12 @@ class MeetConnection {
   late final StreamSubscription<RoomEvent> _eventSubscription;
 
   RTCPeerConnection? _txPc;
+  bool _txRemoteDescriptionSet = false;
+  List<RTCIceCandidate> _txPendingCandidates = [];
+
   RTCPeerConnection? _rxPc;
+  bool _rxRemoteDescriptionSet = false;
+  List<RTCIceCandidate> _rxPendingCandidates = [];
 
   /// Set or remove stream to transmit.
   ///
@@ -41,11 +46,11 @@ class MeetConnection {
   }
 
   initTx(MediaStream stream) async {
-    // Close previous peer connection
-    await _txPc?.close();
+    _txPc?.close();
     _txPc = null;
+    _txRemoteDescriptionSet = false;
+    _txPendingCandidates = [];
 
-    // Setup new peer connection
     RTCPeerConnection txPc = await createPeerConnection(peerConfig);
     _txPc = txPc;
 
@@ -74,7 +79,7 @@ class MeetConnection {
     try {
       await roomClient.eventStream.firstWhere((event) {
         return event is MeetConnectionReady && event.clientId == clientId;
-      }).timeout(const Duration(seconds: 5));
+      }).timeout(const Duration(seconds: 20));
       debugPrint('Received ready');
     } on TimeoutException {
       debugPrint('Timeout waiting for ready');
@@ -85,27 +90,32 @@ class MeetConnection {
     await txPc.setLocalDescription(offer);
     roomClient.sendOffer(clientId, offer);
 
-    // Retryable function to wait for answer
     try {
-      // Wait for answer
       RoomEvent answer = await roomClient.eventStream.firstWhere((event) {
         return event is MeetConnectionAnswer && event.clientId == clientId;
-      }).timeout(const Duration(seconds: 5));
-
+      }).timeout(const Duration(seconds: 20));
       debugPrint('Received answer');
-      // Check if peer is not null because it could be disposed while waiting for answer
-      if (_txPc != null) txPc.setRemoteDescription((answer as MeetConnectionAnswer).answer);
+      if (_txPc != null) {
+        await _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
+        for (var candidate in _txPendingCandidates) {
+          await _txPc!.addCandidate(candidate);
+        }
+        _txPendingCandidates.clear();
+        _txRemoteDescriptionSet = true;
+      }
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
-      // Check if peer is not null because it could be disposed while waiting for answer
-      // Than retry connection
+
       if (_txPc != null) initTx(stream);
     }
   }
 
   initRx() async {
-    await _rxPc?.close();
+    _rxPc?.close();
     _rxPc = null;
+    _rxRemoteDescriptionSet = false;
+    _rxPendingCandidates = [];
+
     RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
     _rxPc = rxPc;
 
@@ -116,10 +126,10 @@ class MeetConnection {
 
     rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
-      // if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-      //   _rxPc?.close();
-      //   renderer.srcObject = null;
-      // }
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+        _rxPc?.close();
+        renderer.srcObject = null;
+      }
     };
 
     rxPc.onTrack = (track) {
@@ -133,6 +143,13 @@ class MeetConnection {
   connectRx(RTCSessionDescription offer) async {
     if (_rxPc != null) {
       await _rxPc!.setRemoteDescription(offer);
+
+      for (var candidate in _rxPendingCandidates) {
+        await _rxPc!.addCandidate(candidate);
+      }
+      _rxPendingCandidates.clear();
+      _rxRemoteDescriptionSet = true;
+
       final answer = await _rxPc!.createAnswer();
       await _rxPc!.setLocalDescription(answer);
       roomClient.sendAnswer(clientId, answer);
@@ -153,15 +170,23 @@ class MeetConnection {
         // RX candidate is for TX pc and vice versa
         if (event.pcType == PcType.tx) {
           if (_rxPc != null) {
-            _rxPc!.addCandidate(event.candidate);
             debugPrint('RX candidate is received');
+            if (_rxRemoteDescriptionSet) {
+              _rxPc!.addCandidate(event.candidate);
+            } else {
+              _rxPendingCandidates.add(event.candidate);
+            }
           } else {
             debugPrint('RX candidate is loss');
           }
         } else {
           if (_txPc != null) {
-            _txPc!.addCandidate(event.candidate);
             debugPrint('TX candidate is received');
+            if (_txRemoteDescriptionSet) {
+              _txPc!.addCandidate(event.candidate);
+            } else {
+              _txPendingCandidates.add(event.candidate);
+            }
           } else {
             debugPrint('TX candidate is loss');
           }
