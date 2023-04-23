@@ -66,6 +66,10 @@ class MeetConnection {
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
       roomClient.sendCandidate(clientId, PcType.tx, candidate);
+
+      // Future.delayed(const Duration(seconds: 1), () {
+      //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      // });
     };
 
     List<MediaStreamTrack> txTracks = stream.getTracks();
@@ -145,7 +149,7 @@ class MeetConnection {
   connectRx(RTCSessionDescription offer) async {
     if (_rxPc != null) {
       await _rxPc!.setRemoteDescription(offer);
-
+      await Future.delayed(const Duration(seconds: 1));
       for (var candidate in _rxPendingCandidates) {
         _rxPc!.addCandidate(candidate);
       }
