@@ -8311,6 +8311,7 @@ _.e=null
 _.f=!1
 _.r=c
 _.w=null
+_.x=!1
 _.y=d},
 a2U:function a2U(a,b){this.a=a
 this.b=b},
@@ -39604,7 +39605,7 @@ s.toString
 r=A.amW(q,s)
 A.qR(q,!0).lX(0,A.azj(null,B.C,!0,null,new A.a2o(),q,null,r,!0,t.z))},
 K(a){var s=null
-return A.arZ(A.as8(A.n_(A.a([A.ee("27",s,s,s,s,s,s),A.amH(B.NM,this.gadh())],t.F),B.b2)))}}
+return A.arZ(A.as8(A.n_(A.a([A.ee("28",s,s,s,s,s,s),A.amH(B.NM,this.gadh())],t.F),B.b2)))}}
 A.a2o.prototype={
 $1(a){return B.HK},
 $S:355}
@@ -39732,6 +39733,7 @@ var $async$vA=A.a_(function(a,b){if(a===1)return A.W(b,r)
 while(true)switch(s){case 0:o=q.w
 if(o!=null)o.ce(0)
 q.w=null
+q.x=!1
 q.y=A.a([],t.Wy)
 s=2
 return A.a8($.UQ().uR($.av8,null),$async$vA)
@@ -39755,6 +39757,7 @@ j=q.w.at
 j===$&&A.b()
 i=A.a0(["candidate",k.a,"sdpMid",k.b,"sdpMLineIndex",k.c],o,n)
 A.e1(j.addIceCandidate(new window.RTCIceCandidate(new A.p6([],[]).hu(i))),m)}B.b.P(q.y)
+q.x=!0
 s=5
 return A.a8(q.w.uM(0),$async$n9)
 case 5:h=c
@@ -39767,7 +39770,10 @@ C0(a){var s,r,q=this
 if(a instanceof A.x4&&a.a===q.a)q.vA()
 if(a instanceof A.x2&&a.b===q.a)q.n9(a.a)
 if(a instanceof A.x1)if(a.b===q.a)if(a.a===B.hX)if(q.w!=null){A.eH().$1("RX candidate is received")
-q.w.L6(a.c)}else A.eH().$1("RX candidate is loss")
+s=q.x
+r=a.c
+if(s)q.w.L6(r)
+else q.y.push(r)}else A.eH().$1("RX candidate is loss")
 else if(q.e!=null){A.eH().$1("TX candidate is received")
 s=q.f
 r=a.c
@@ -39783,8 +39789,8 @@ $S:113}
 A.a2V.prototype={
 $1(a){var s
 A.eH().$1("onIceCandidate tx: "+a.k(0))
-s=this.a
-s.b.rj(s.a,B.hX,a)},
+if(a.b!=="0"){s=this.a
+s.b.rj(s.a,B.hX,a)}},
 $S:111}
 A.a2W.prototype={
 $1(a){return a instanceof A.x3&&a.a===this.a.a},

@@ -63,13 +63,11 @@ class MeetConnection {
         if (_txPc != null) initTx(stream);
       }
     };
-
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
-      // Future.delayed(Duration(seconds: 2)).then((value) {
-      roomClient.sendCandidate(clientId, PcType.tx, candidate);
-      // });
-      // roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      if (candidate.sdpMid != '0') {
+        roomClient.sendCandidate(clientId, PcType.tx, candidate);
+      }
     };
 
     List<MediaStreamTrack> txTracks = stream.getTracks();
@@ -112,7 +110,6 @@ class MeetConnection {
       }
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
-
       if (_txPc != null) initTx(stream);
     }
   }
@@ -178,13 +175,13 @@ class MeetConnection {
         if (event.pcType == PcType.tx) {
           if (_rxPc != null) {
             debugPrint('RX candidate is received');
-            _rxPc!.addCandidate(event.candidate);
+            // _rxPc!.addCandidate(event.candidate);
 
-            // if (_rxRemoteDescriptionSet) {
-            //   _rxPc!.addCandidate(event.candidate);
-            // } else {
-            //   _rxPendingCandidates.add(event.candidate);
-            // }
+            if (_rxRemoteDescriptionSet) {
+              _rxPc!.addCandidate(event.candidate);
+            } else {
+              _rxPendingCandidates.add(event.candidate);
+            }
           } else {
             debugPrint('RX candidate is loss');
           }
