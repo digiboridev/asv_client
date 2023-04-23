@@ -64,10 +64,10 @@ class MeetConnection {
       }
     };
 
-    // txPc.onIceCandidate = (candidate) {
-    //   debugPrint('onIceCandidate tx: $candidate');
-    //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
-    // };
+    txPc.onIceCandidate = (candidate) {
+      debugPrint('onIceCandidate tx: $candidate');
+      roomClient.sendCandidate(clientId, PcType.tx, candidate);
+    };
 
     List<MediaStreamTrack> txTracks = stream.getTracks();
     for (var track in txTracks) {
@@ -131,8 +131,8 @@ class MeetConnection {
     rxPc.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        _rxPc?.close();
-        renderer.srcObject = null;
+        // _rxPc?.close();
+        // renderer.srcObject = null;
       }
     };
 
