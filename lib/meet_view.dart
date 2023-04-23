@@ -42,7 +42,7 @@ class MeetConnection {
 
   initTx(MediaStream stream) async {
     // Close previous peer connection
-    _txPc?.close();
+    await _txPc?.close();
     _txPc = null;
 
     // Setup new peer connection
@@ -104,7 +104,7 @@ class MeetConnection {
   }
 
   initRx() async {
-    _rxPc?.close();
+    await _rxPc?.close();
     _rxPc = null;
     RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
     _rxPc = rxPc;

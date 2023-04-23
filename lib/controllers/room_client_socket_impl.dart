@@ -191,7 +191,6 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
         return null;
     }
   } catch (e) {
-    print(e);
     return null;
   }
 }
