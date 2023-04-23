@@ -178,24 +178,26 @@ class MeetConnection {
         if (event.pcType == PcType.tx) {
           if (_rxPc != null) {
             debugPrint('RX candidate is received');
-            if (_rxRemoteDescriptionSet) {
-              _rxPc!.addCandidate(event.candidate);
-            } else {
-              _rxPendingCandidates.add(event.candidate);
-            }
+            _rxPc!.addCandidate(event.candidate);
+
+            // if (_rxRemoteDescriptionSet) {
+            //   _rxPc!.addCandidate(event.candidate);
+            // } else {
+            //   _rxPendingCandidates.add(event.candidate);
+            // }
           } else {
             debugPrint('RX candidate is loss');
           }
         } else {
           if (_txPc != null) {
             debugPrint('TX candidate is received');
-            _txPc!.addCandidate(event.candidate);
+            // _txPc!.addCandidate(event.candidate);
 
-            // if (_txRemoteDescriptionSet) {
-            //   _txPc!.addCandidate(event.candidate);
-            // } else {
-            //   _txPendingCandidates.add(event.candidate);
-            // }
+            if (_txRemoteDescriptionSet) {
+              _txPc!.addCandidate(event.candidate);
+            } else {
+              _txPendingCandidates.add(event.candidate);
+            }
           } else {
             debugPrint('TX candidate is loss');
           }
