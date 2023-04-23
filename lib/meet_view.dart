@@ -155,7 +155,7 @@ class MeetConnection {
       await _rxPc!.setLocalDescription(answer);
       roomClient.sendAnswer(clientId, answer);
 
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       for (var candidate in _rxPendingCandidates) {
         await _rxPc!.addCandidate(candidate);
