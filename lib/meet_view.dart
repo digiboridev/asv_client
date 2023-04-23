@@ -149,7 +149,7 @@ class MeetConnection {
   connectRx(RTCSessionDescription offer) async {
     if (_rxPc != null) {
       await _rxPc!.setRemoteDescription(offer);
-      await Future.delayed(const Duration(seconds: 1));
+
       for (var candidate in _rxPendingCandidates) {
         _rxPc!.addCandidate(candidate);
       }
