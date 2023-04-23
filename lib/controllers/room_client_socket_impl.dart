@@ -77,6 +77,22 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   // RTC section
   @override
+  Future sendWarmup(String toClientId) async {
+    _socket.emit('rtc_warmup', {
+      'from': clientId,
+      'to': toClientId,
+    });
+  }
+
+  @override
+  Future sendReady(String toClientId) async {
+    _socket.emit('rtc_ready', {
+      'from': clientId,
+      'to': toClientId,
+    });
+  }
+
+  @override
   Future sendOffer(String toClientId, RTCSessionDescription offer) async {
     _socket.emit('rtc_offer', {
       'from': clientId,
@@ -136,6 +152,14 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
       case 'typing_cancel':
         return ClientTypingCancel(
           clientId: data['clientId'],
+        );
+      case 'rtc_warmup':
+        return MeetConnectionWarmup(
+          clientId: data['from'],
+        );
+      case 'rtc_ready':
+        return MeetConnectionReady(
+          clientId: data['from'],
         );
       case 'rtc_offer':
         return MeetConnectionOffer(

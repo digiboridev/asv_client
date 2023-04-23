@@ -56,19 +56,31 @@ class MeetConnection {
       }
     };
 
-    // List<RTCIceCandidate> candidates = [];
-
     txPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate tx: $candidate');
       Future.delayed(const Duration(milliseconds: 300)).then((value) {
         roomClient.sendCandidate(clientId, PcType.tx, candidate);
       });
-      // candidates.add(candidate);
     };
 
     stream.getTracks().forEach((track) {
       txPc.addTrack(track, stream);
     });
+
+    roomClient.sendWarmup(clientId);
+    try {
+      // Wait for ready signal
+      await roomClient.eventStream.firstWhere((event) {
+        return event is MeetConnectionReady && event.clientId == clientId;
+      }).timeout(const Duration(seconds: 5));
+
+      debugPrint('Received ready');
+    } on TimeoutException {
+      debugPrint('Timeout waiting for ready');
+      // Check if peer is not null because it could be disposed while waiting for answer
+      // Than retry connection
+      if (_txPc != null) initTx(stream);
+    }
 
     final offer = await txPc.createOffer();
     txPc.setLocalDescription(offer);
@@ -84,11 +96,6 @@ class MeetConnection {
       debugPrint('Received answer');
       // Check if peer is not null because it could be disposed while waiting for answer
       if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
-
-      // // Send candidates
-      // for (var candidate in candidates) {
-      //   roomClient.sendCandidate(clientId, PcType.tx, candidate);
-      // }
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
@@ -97,15 +104,10 @@ class MeetConnection {
     }
   }
 
-  initRx(RTCSessionDescription offer) async {
+  initRx() async {
     _rxPc?.close();
-
-    debugPrint('RX before createPeerConnection');
-
     RTCPeerConnection rxPc = await createPeerConnection(peerConfig);
     _rxPc = rxPc;
-
-    debugPrint('RX after createPeerConnection');
 
     rxPc.onIceCandidate = (candidate) {
       debugPrint('onIceCandidate rx: $candidate');
@@ -125,24 +127,24 @@ class MeetConnection {
       renderer.srcObject = track.streams.first;
     };
 
-    await rxPc.setRemoteDescription(offer);
+    roomClient.sendReady(clientId);
+  }
 
-    debugPrint('RX before createAnswer');
-
-    final answer = await rxPc.createAnswer();
-
-    debugPrint('RX after createAnswer');
-
-    await rxPc.setLocalDescription(answer);
-
-    roomClient.sendAnswer(clientId, answer);
-
-    debugPrint('RX after sendAnswer');
+  connectRx(RTCSessionDescription offer) async {
+    if (_rxPc != null) {
+      await _rxPc!.setRemoteDescription(offer);
+      final answer = await _rxPc!.createAnswer();
+      await _rxPc!.setLocalDescription(answer);
+      roomClient.sendAnswer(clientId, answer);
+    }
   }
 
   eventHandler(RoomEvent event) {
+    if (event is MeetConnectionWarmup && event.clientId == clientId) {
+      initRx();
+    }
     if (event is MeetConnectionOffer && event.clientId == clientId) {
-      initRx(event.offer);
+      connectRx(event.offer);
     }
 
     if (event is MeetConnectionCandidate) {
