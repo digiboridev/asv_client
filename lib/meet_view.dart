@@ -41,7 +41,11 @@ class MeetConnection {
   }
 
   initTx(MediaStream stream) async {
+    // Close previous peer connection
     _txPc?.close();
+    _txPc = null;
+
+    // Setup new peer connection
     RTCPeerConnection txPc = await createPeerConnection(peerConfig);
     _txPc = txPc;
 
@@ -61,27 +65,24 @@ class MeetConnection {
       roomClient.sendCandidate(clientId, PcType.tx, candidate);
     };
 
-    stream.getTracks().forEach((track) {
-      txPc.addTrack(track, stream);
-    });
+    List<MediaStreamTrack> txTracks = stream.getTracks();
+    for (var track in txTracks) {
+      await txPc.addTrack(track, stream);
+    }
 
     roomClient.sendWarmup(clientId);
     try {
-      // Wait for ready signal
       await roomClient.eventStream.firstWhere((event) {
         return event is MeetConnectionReady && event.clientId == clientId;
       }).timeout(const Duration(seconds: 5));
-
       debugPrint('Received ready');
     } on TimeoutException {
       debugPrint('Timeout waiting for ready');
-      // Check if peer is not null because it could be disposed while waiting for answer
-      // Than retry connection
       if (_txPc != null) initTx(stream);
     }
 
     final offer = await txPc.createOffer();
-    txPc.setLocalDescription(offer);
+    await txPc.setLocalDescription(offer);
     roomClient.sendOffer(clientId, offer);
 
     // Retryable function to wait for answer
@@ -93,7 +94,7 @@ class MeetConnection {
 
       debugPrint('Received answer');
       // Check if peer is not null because it could be disposed while waiting for answer
-      if (_txPc != null) _txPc!.setRemoteDescription((answer as MeetConnectionAnswer).answer);
+      if (_txPc != null) txPc.setRemoteDescription((answer as MeetConnectionAnswer).answer);
     } on TimeoutException {
       debugPrint('Timeout waiting for answer');
       // Check if peer is not null because it could be disposed while waiting for answer
@@ -246,7 +247,7 @@ class _MeetViewState extends State<MeetView> {
 
   Future streamDisplay() async {
     stopStream();
-    final stream = await navigator.mediaDevices.getDisplayMedia({'audio': true, 'video': true});
+    final stream = await navigator.mediaDevices.getDisplayMedia({'audio': false, 'video': true});
     localStream = stream;
     localRenderer.srcObject = stream;
     for (var connection in connections) {
