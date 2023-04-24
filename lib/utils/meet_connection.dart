@@ -18,6 +18,7 @@ class Transmitter {
   final MediaStream stream;
 
   RTCPeerConnection? _pc;
+  bool tracksAdded = false;
 
   Future _setup() async {
     _pc = await createPeerConnection(peerConfig);
@@ -75,12 +76,13 @@ class Transmitter {
     debugPrint('setRemoteDescription: $description');
     await _pc!.setRemoteDescription(description);
 
-    if (_pc!.connectionState == null) {
+    if (!tracksAdded) {
       debugPrint('adding tracks');
       for (var track in stream.getTracks()) {
         await _pc!.addTrack(track, stream);
       }
     }
+    tracksAdded = true;
   }
 
   _init() async {

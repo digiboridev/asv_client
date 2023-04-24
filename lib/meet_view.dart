@@ -91,10 +91,17 @@ class _MeetViewState extends State<MeetView> {
   }
 
   @override
-  void deactivate() {
-    super.deactivate();
-    stopStream();
+  void dispose() {
+    super.dispose();
     eventSubscription.cancel();
+    for (var connection in connections) {
+      connection.dispose();
+    }
+    if (kIsWeb) {
+      localStream?.getTracks().forEach((track) => track.stop());
+    }
+    localRenderer.dispose();
+    localStream?.dispose();
   }
 
   @override
