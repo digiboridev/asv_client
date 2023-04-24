@@ -81,7 +81,7 @@ class MainState extends State<Main> {
       body: SizedBox.expand(
         child: Column(
           children: [
-            Text('34'),
+            Text('35'),
             // Text('Connected: ${socket.connected}'),
             // Text('Disconnected: ${socket.disconnected}'),
             // Text('Active: ${socket.active}'),
