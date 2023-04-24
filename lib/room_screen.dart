@@ -42,21 +42,19 @@ class _RoomScreenState extends State<RoomScreen> {
           children: [
             Expanded(
               flex: 2,
-              child: Column(
-                children: [
-                  Text('Room: ${widget.roomId}'),
-                  Text('Connection status: ${roomClient.isActive}'),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => roomClient.sendMessage('Hello'),
-                    child: const Text('Send message'),
-                  ),
-                  Expanded(
-                      child: MeetView(
-                    roomClient: roomClient,
-                  )),
-                ],
-              ),
+              child: AnimatedBuilder(
+                  animation: roomClient,
+                  builder: (context, _) {
+                    if (roomClient.isConnected) {
+                      return MeetView(
+                        roomClient: roomClient,
+                      );
+                    } else {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  }),
             ),
             Expanded(
               flex: 1,
