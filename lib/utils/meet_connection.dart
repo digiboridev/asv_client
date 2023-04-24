@@ -20,8 +20,8 @@ class Transmitter {
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
-  // bool _hasRemoteDescription = false;
-  // List<RTCIceCandidate> _pendingCandidates = [];
+  bool _hasRemoteDescription = false;
+  List<RTCIceCandidate> _pendingCandidates = [];
 
   Future _warmup() async {
     if (_disposed) return;
@@ -80,22 +80,22 @@ class Transmitter {
     debugPrint('setRemoteDescription: $description');
     await _pc!.setRemoteDescription(description);
 
-    // for (var candidate in _pendingCandidates) {
-    //   await _pc!.addCandidate(candidate);
-    // }
-    // _pendingCandidates.clear();
-    // _hasRemoteDescription = true;
+    for (var candidate in _pendingCandidates) {
+      await _pc!.addCandidate(candidate);
+    }
+    _pendingCandidates.clear();
+    _hasRemoteDescription = true;
   }
 
   addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-    await _pc!.addCandidate(candidate);
+    // await _pc!.addCandidate(candidate);
 
-    // if (_hasRemoteDescription) {
-    //   await _pc!.addCandidate(candidate);
-    // } else {
-    //   _pendingCandidates.add(candidate);
-    // }
+    if (_hasRemoteDescription) {
+      await _pc!.addCandidate(candidate);
+    } else {
+      _pendingCandidates.add(candidate);
+    }
   }
 
   _init() async {
