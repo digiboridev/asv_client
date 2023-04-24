@@ -20,8 +20,8 @@ class Transmitter {
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
-  bool _hasRemoteDescription = false;
-  List<RTCIceCandidate> _pendingCandidates = [];
+  // bool _hasRemoteDescription = false;
+  // List<RTCIceCandidate> _pendingCandidates = [];
 
   Future _warmup() async {
     if (_disposed) return;
@@ -71,29 +71,31 @@ class Transmitter {
     debugPrint('negotiating');
 
     final offer = await _pc!.createOffer();
-    _pc!.setLocalDescription(offer);
+    await _pc!.setLocalDescription(offer);
     roomClient.sendOffer(clientId, offer);
   }
 
-  setRemoteDescription(RTCSessionDescription description) {
+  setRemoteDescription(RTCSessionDescription description) async {
     if (_disposed) return;
     debugPrint('setRemoteDescription: $description');
-    _pc!.setRemoteDescription(description);
+    await _pc!.setRemoteDescription(description);
 
-    for (var candidate in _pendingCandidates) {
-      _pc!.addCandidate(candidate);
-    }
-    _pendingCandidates.clear();
-    _hasRemoteDescription = true;
+    // for (var candidate in _pendingCandidates) {
+    //   await _pc!.addCandidate(candidate);
+    // }
+    // _pendingCandidates.clear();
+    // _hasRemoteDescription = true;
   }
 
-  addCandidate(RTCIceCandidate candidate) {
+  addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-    if (_hasRemoteDescription) {
-      _pc!.addCandidate(candidate);
-    } else {
-      _pendingCandidates.add(candidate);
-    }
+    await _pc!.addCandidate(candidate);
+
+    // if (_hasRemoteDescription) {
+    //   await _pc!.addCandidate(candidate);
+    // } else {
+    //   _pendingCandidates.add(candidate);
+    // }
   }
 
   _init() async {
@@ -132,7 +134,7 @@ class Receiver {
 
     _pc!.onConnectionState = (state) {
       debugPrint('onConnectionState rx: $state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         renderer.srcObject = null;
       }
     };
@@ -148,13 +150,13 @@ class Receiver {
   connect(RTCSessionDescription offer) async {
     await _pc!.setRemoteDescription(offer);
     final answer = await _pc!.createAnswer();
-    _pc!.setLocalDescription(answer);
+    await _pc!.setLocalDescription(answer);
     roomClient.sendAnswer(clientId, answer);
   }
 
-  addCandidate(RTCIceCandidate candidate) {
+  addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-    _pc!.addCandidate(candidate);
+    await _pc!.addCandidate(candidate);
   }
 
   bool _disposed = false;
