@@ -42,6 +42,8 @@ class Transmitter {
 
   Future _setup() async {
     if (_disposed) return;
+    debugPrint('tx setting up');
+
     _pc = await createPeerConnection(peerConfig);
 
     for (var track in stream.getTracks()) {
@@ -49,17 +51,17 @@ class Transmitter {
     }
 
     _pc!.onIceCandidate = (candidate) {
-      debugPrint('onIceCandidate: $candidate');
+      debugPrint('tx onIceCandidate: $candidate');
       roomClient.sendCandidate(clientId, PcType.tx, candidate);
     };
 
     _pc!.onRenegotiationNeeded = () {
-      debugPrint('onRenegotiationNeeded');
+      debugPrint('tx onRenegotiationNeeded');
       _negotiate();
     };
 
     _pc!.onConnectionState = (state) {
-      debugPrint('onConnectionState tx: $state');
+      debugPrint('tx onConnectionState: $state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
         _pc!.restartIce();
       }
@@ -68,7 +70,7 @@ class Transmitter {
 
   Future _negotiate() async {
     if (_disposed) return;
-    debugPrint('negotiating');
+    debugPrint('tx negotiating');
 
     final offer = await _pc!.createOffer();
     await _pc!.setLocalDescription(offer);
@@ -77,19 +79,20 @@ class Transmitter {
 
   setRemoteDescription(RTCSessionDescription description) async {
     if (_disposed) return;
-    debugPrint('setRemoteDescription: $description');
-    await _pc!.setRemoteDescription(description);
+    debugPrint('tx setRemoteDescription: $description');
 
+    await _pc!.setRemoteDescription(description);
+    _hasRemoteDescription = true;
+
+    debugPrint('tx pending candidates: ${_pendingCandidates.length}');
     for (var candidate in _pendingCandidates) {
       await _pc!.addCandidate(candidate);
     }
     _pendingCandidates.clear();
-    _hasRemoteDescription = true;
   }
 
   addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-    // await _pc!.addCandidate(candidate);
 
     if (_hasRemoteDescription) {
       await _pc!.addCandidate(candidate);
@@ -122,25 +125,30 @@ class Receiver {
   final RoomClient roomClient;
   final RTCVideoRenderer renderer;
 
+  bool _disposed = false;
   RTCPeerConnection? _pc;
+  bool _hasRemoteDescription = false;
+  List<RTCIceCandidate> _pendingCandidates = [];
 
   Future _setup() async {
+    debugPrint('rx setting up');
+
     _pc = await createPeerConnection(peerConfig);
 
     _pc!.onIceCandidate = (candidate) {
-      debugPrint('onIceCandidate rx: $candidate');
+      debugPrint('tx onIceCandidate: $candidate');
       roomClient.sendCandidate(clientId, PcType.rx, candidate);
     };
 
     _pc!.onConnectionState = (state) {
-      debugPrint('onConnectionState rx: $state');
+      debugPrint('rx onConnectionState: $state');
       if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         renderer.srcObject = null;
       }
     };
 
     _pc!.onTrack = (track) async {
-      debugPrint('onTrack rx: $track');
+      debugPrint('rx onTrack');
       renderer.srcObject = track.streams.first;
     };
 
@@ -148,7 +156,18 @@ class Receiver {
   }
 
   connect(RTCSessionDescription offer) async {
+    if (_disposed) return;
+    debugPrint('rx connect');
+
     await _pc!.setRemoteDescription(offer);
+    _hasRemoteDescription = true;
+
+    debugPrint('rx pending candidates: ${_pendingCandidates.length}');
+    for (var candidate in _pendingCandidates) {
+      await _pc!.addCandidate(candidate);
+    }
+    _pendingCandidates.clear();
+
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
     roomClient.sendAnswer(clientId, answer);
@@ -156,10 +175,15 @@ class Receiver {
 
   addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-    await _pc!.addCandidate(candidate);
+    debugPrint('rx addCandidate: $candidate');
+
+    if (_hasRemoteDescription) {
+      await _pc!.addCandidate(candidate);
+    } else {
+      _pendingCandidates.add(candidate);
+    }
   }
 
-  bool _disposed = false;
   void dispose() {
     _disposed = true;
     _pc?.close();
