@@ -42,19 +42,30 @@ class _RoomScreenState extends State<RoomScreen> {
           children: [
             Expanded(
               flex: 2,
-              child: AnimatedBuilder(
-                  animation: roomClient,
-                  builder: (context, _) {
-                    if (roomClient.isConnected) {
-                      return MeetView(
-                        roomClient: roomClient,
-                      );
-                    } else {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-                  }),
+              child: Column(
+                children: [
+                  ElevatedButton(
+                      onPressed: () {
+                        roomClient.sendWarmupAck('asd');
+                      },
+                      child: Text('tesrt')),
+                  Expanded(
+                    child: AnimatedBuilder(
+                        animation: roomClient,
+                        builder: (context, _) {
+                          if (roomClient.isConnected) {
+                            return MeetView(
+                              roomClient: roomClient,
+                            );
+                          } else {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                        }),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               flex: 1,

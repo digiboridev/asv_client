@@ -20,24 +20,19 @@ class Transmitter {
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
-  bool _hasRemoteDescription = false;
-  List<RTCIceCandidate> _pendingCandidates = [];
 
   Future _warmup() async {
     if (_disposed) return;
 
     debugPrint('warming up');
-    roomClient.sendWarmup(clientId);
 
-    try {
-      await roomClient.eventStream.firstWhere((event) {
-        return event is MeetConnectionReady && event.clientId == clientId;
-      }).timeout(const Duration(seconds: 5));
-      debugPrint('$clientId is ready for connection ');
-    } on TimeoutException {
-      debugPrint('Timeout waiting for ready, retrying');
+    String result = await roomClient.sendWarmupAck(clientId);
+    if (result != 'ready') {
+      debugPrint('Warmup ack failed, retrying');
       return await _warmup();
     }
+
+    debugPrint('Warmup ack: $result');
   }
 
   Future _setup() async {
@@ -45,10 +40,6 @@ class Transmitter {
     debugPrint('tx setting up');
 
     _pc = await createPeerConnection(peerConfig);
-
-    for (var track in stream.getTracks()) {
-      await _pc!.addTrack(track, stream);
-    }
 
     _pc!.onIceCandidate = (candidate) {
       debugPrint('tx onIceCandidate: $candidate');
@@ -66,6 +57,10 @@ class Transmitter {
         _pc!.restartIce();
       }
     };
+
+    for (var track in stream.getTracks()) {
+      await _pc!.addTrack(track, stream);
+    }
   }
 
   Future _negotiate() async {
@@ -82,23 +77,11 @@ class Transmitter {
     debugPrint('tx setRemoteDescription: $description');
 
     await _pc!.setRemoteDescription(description);
-    _hasRemoteDescription = true;
-
-    debugPrint('tx pending candidates: ${_pendingCandidates.length}');
-    for (var candidate in _pendingCandidates) {
-      await _pc!.addCandidate(candidate);
-    }
-    _pendingCandidates.clear();
   }
 
   addCandidate(RTCIceCandidate candidate) async {
     if (_disposed) return;
-
-    if (_hasRemoteDescription) {
-      await _pc!.addCandidate(candidate);
-    } else {
-      _pendingCandidates.add(candidate);
-    }
+    await _pc!.addCandidate(candidate);
   }
 
   _init() async {
@@ -127,8 +110,6 @@ class Receiver {
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
-  bool _hasRemoteDescription = false;
-  List<RTCIceCandidate> _pendingCandidates = [];
 
   Future _setup() async {
     debugPrint('rx setting up');
@@ -160,14 +141,6 @@ class Receiver {
     debugPrint('rx connect');
 
     await _pc!.setRemoteDescription(offer);
-    _hasRemoteDescription = true;
-
-    debugPrint('rx pending candidates: ${_pendingCandidates.length}');
-    for (var candidate in _pendingCandidates) {
-      await _pc!.addCandidate(candidate);
-    }
-    _pendingCandidates.clear();
-
     final answer = await _pc!.createAnswer();
     await _pc!.setLocalDescription(answer);
     roomClient.sendAnswer(clientId, answer);
@@ -177,11 +150,7 @@ class Receiver {
     if (_disposed) return;
     debugPrint('rx addCandidate: $candidate');
 
-    if (_hasRemoteDescription) {
-      await _pc!.addCandidate(candidate);
-    } else {
-      _pendingCandidates.add(candidate);
-    }
+    await _pc!.addCandidate(candidate);
   }
 
   void dispose() {
@@ -243,8 +212,9 @@ class MeetConnection {
   }
 
   eventHandler(RoomEvent event) async {
-    if (event is MeetConnectionWarmup && event.clientId == clientId) {
+    if (event is MeetConnectionWarmupAck && event.clientId == clientId) {
       initReceiver();
+      event.callback('ready');
     }
     if (event is MeetConnectionOffer && event.clientId == clientId) {
       _receiver?.connect(event.offer);

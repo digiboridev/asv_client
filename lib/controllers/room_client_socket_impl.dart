@@ -36,8 +36,8 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   init() {
     _socket = io(
-      'https://asv-socket.onrender.com',
-      // 'http://localhost:3000',
+      // 'https://asv-socket.onrender.com',
+      'http://localhost:3000',
       OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
         {'token': kRoomSocketToken, 'roomId': roomId, 'clientId': clientId},
       ).build(),
@@ -78,11 +78,28 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   // RTC section
   @override
-  Future sendWarmup(String toClientId) async {
-    _socket.emit('rtc_warmup', {
+  // Future sendWarmup(String toClientId) async {
+  //   _socket.emit('rtc_warmup', {
+  //     'from': clientId,
+  //     'to': toClientId,
+  //   });
+  // }
+
+  @override
+  Future<String> sendWarmupAck(String toClientId) async {
+    final c = Completer<String>();
+    Timer(const Duration(seconds: 2), () {
+      if (!c.isCompleted) c.complete('timeout');
+    });
+
+    _socket.emitWithAck('rtc_warmup_ack', {
       'from': clientId,
       'to': toClientId,
+    }, ack: (String data) {
+      c.complete(data);
     });
+
+    return c.future;
   }
 
   @override
@@ -154,9 +171,15 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
         return ClientTypingCancel(
           clientId: data['clientId'],
         );
-      case 'rtc_warmup':
-        return MeetConnectionWarmup(
-          clientId: data['from'],
+      // case 'rtc_warmup':
+      //   return MeetConnectionWarmup(
+      //     clientId: data['from'],
+      //   );
+      case 'rtc_warmup_ack':
+        var d = data as List;
+        return MeetConnectionWarmupAck(
+          clientId: d.first['from'],
+          callback: d.last,
         );
       case 'rtc_ready':
         return MeetConnectionReady(
