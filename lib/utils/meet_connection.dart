@@ -1,25 +1,46 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 // ignore_for_file: prefer_final_fields
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+
 import 'package:asv_client/core/constants.dart';
 import 'package:asv_client/domain/controllers/room_client.dart';
+
+class TrueStreamTrack {
+  final MediaStreamTrack track;
+  final MediaStream stream;
+  TrueStreamTrack({
+    required this.track,
+    required this.stream,
+  });
+}
 
 class Transmitter {
   Transmitter({
     required this.clientId,
     required this.roomClient,
-    required this.stream,
+    required this.notifyListeners,
+    TrueStreamTrack? audioTrack,
+    TrueStreamTrack? videoTrack,
   }) {
+    _audioTrack = audioTrack;
+    _videoTrack = videoTrack;
     _init();
   }
 
   final String clientId;
   final RoomClient roomClient;
-  final MediaStream stream;
+  final VoidCallback notifyListeners;
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
+
+  TrueStreamTrack? _audioTrack;
+  TrueStreamTrack? _videoTrack;
+  RTCRtpSender? _audioSender;
+  RTCRtpSender? _videoSender;
 
   Future _warmup() async {
     if (_disposed) return;
@@ -28,14 +49,14 @@ class Transmitter {
 
     String result = await roomClient.sendWarmupAck(clientId);
     if (result != 'ready') {
-      debugPrint('Warmup ack failed, retrying');
+      debugPrint('Warmup failed, retrying');
       return await _warmup();
     }
 
-    debugPrint('Warmup ack: $result');
+    debugPrint('Warmup: $result');
   }
 
-  Future _setup() async {
+  Future _start() async {
     if (_disposed) return;
     debugPrint('tx setting up');
 
@@ -58,8 +79,33 @@ class Transmitter {
       }
     };
 
-    for (var track in stream.getTracks()) {
-      await _pc!.addTrack(track, stream);
+    attachAudioTrack();
+    attachVideoTrack();
+  }
+
+  Future setAudioTrack(TrueStreamTrack? track) async {
+    _audioTrack = track;
+    if (_pc != null) await attachAudioTrack();
+  }
+
+  Future attachAudioTrack() async {
+    if (_audioTrack != null) _audioSender = await _pc!.addTrack(_audioTrack!.track, _audioTrack!.stream);
+    if (_audioTrack == null && _audioSender != null) {
+      await _pc!.removeTrack(_audioSender!);
+      _audioSender = null;
+    }
+  }
+
+  Future setVideoTrack(TrueStreamTrack? track) async {
+    _videoTrack = track;
+    if (_pc != null) await attachVideoTrack();
+  }
+
+  Future attachVideoTrack() async {
+    if (_videoTrack != null) _videoSender = await _pc!.addTrack(_videoTrack!.track, _videoTrack!.stream);
+    if (_videoTrack == null && _videoSender != null) {
+      await _pc!.removeTrack(_videoSender!);
+      _videoSender = null;
     }
   }
 
@@ -86,7 +132,7 @@ class Transmitter {
 
   _init() async {
     await _warmup();
-    await _setup();
+    await _start();
   }
 
   void dispose() {
@@ -99,17 +145,22 @@ class Receiver {
   Receiver({
     required this.clientId,
     required this.roomClient,
-    required this.renderer,
+    required this.notifyListeners,
   }) {
     _setup();
   }
 
   final String clientId;
   final RoomClient roomClient;
-  final RTCVideoRenderer renderer;
+  final VoidCallback notifyListeners;
 
   bool _disposed = false;
   RTCPeerConnection? _pc;
+  MediaStream? _audioStream;
+  MediaStream? _videoStream;
+
+  MediaStream? get audioStream => _audioStream;
+  MediaStream? get videoStream => _videoStream;
 
   Future _setup() async {
     debugPrint('rx setting up');
@@ -123,22 +174,35 @@ class Receiver {
 
     _pc!.onConnectionState = (state) {
       debugPrint('rx onConnectionState: $state');
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
-        renderer.srcObject = null;
-      }
     };
 
     _pc!.onTrack = (track) async {
       debugPrint('rx onTrack');
-      renderer.srcObject = track.streams.first;
-    };
 
-    roomClient.sendReady(clientId);
+      if (track.streams.isEmpty) return;
+
+      if (track.track.kind == 'audio') {
+        _audioStream = track.streams.first;
+        track.track.onMute = () {
+          _audioStream = null;
+          debugPrint('rx onMute');
+        };
+      }
+      if (track.track.kind == 'video') {
+        _videoStream = track.streams.first;
+        track.track.onMute = () {
+          _videoStream = null;
+          debugPrint('rx onMute');
+        };
+      }
+
+      notifyListeners();
+    };
   }
 
-  connect(RTCSessionDescription offer) async {
+  answer(RTCSessionDescription offer) async {
     if (_disposed) return;
-    debugPrint('rx connect');
+    debugPrint('rx answer');
 
     await _pc!.setRemoteDescription(offer);
     final answer = await _pc!.createAnswer();
@@ -159,89 +223,72 @@ class Receiver {
   }
 }
 
-class MeetConnection {
+class MeetConnection extends ChangeNotifier {
   MeetConnection({
     required this.clientId,
     required this.roomClient,
-    MediaStream? txStream,
+    TrueStreamTrack? audioTrack,
+    TrueStreamTrack? videoTrack,
   }) {
-    renderer = RTCVideoRenderer();
-    renderer.initialize();
     _eventSubscription = roomClient.eventStream.listen(eventHandler);
 
-    // Start transmitting if tx stream provided
-    if (txStream != null) initTransmitter(txStream);
+    _transmitter = Transmitter(
+      clientId: clientId,
+      roomClient: roomClient,
+      notifyListeners: () => notifyListeners(),
+      audioTrack: audioTrack,
+      videoTrack: videoTrack,
+    );
+
+    _receiver = Receiver(
+      clientId: clientId,
+      roomClient: roomClient,
+      notifyListeners: () => notifyListeners(),
+    );
   }
 
   final String clientId;
   final RoomClient roomClient;
 
   late final StreamSubscription<RoomEvent> _eventSubscription;
-  late final RTCVideoRenderer renderer;
+  late final Transmitter _transmitter;
+  late final Receiver _receiver;
 
-  Transmitter? _transmitter;
-  Receiver? _receiver;
+  MediaStream? get audioStream => _receiver.audioStream;
+  MediaStream? get videoStream => _receiver.videoStream;
 
-  set setTxStream(MediaStream? stream) {
-    if (stream != null) {
-      initTransmitter(stream);
-    } else {
-      _transmitter?.dispose();
-      _transmitter = null;
-    }
-  }
-
-  initTransmitter(MediaStream stream) {
-    _transmitter?.dispose();
-
-    _transmitter = Transmitter(
-      clientId: clientId,
-      roomClient: roomClient,
-      stream: stream,
-    );
-  }
-
-  initReceiver() {
-    _receiver?.dispose();
-
-    _receiver = Receiver(
-      clientId: clientId,
-      roomClient: roomClient,
-      renderer: renderer,
-    );
-  }
+  Future setAudioTrack(TrueStreamTrack? track) => _transmitter.setAudioTrack(track);
+  Future setVideoTrack(TrueStreamTrack? track) => _transmitter.setVideoTrack(track);
 
   eventHandler(RoomEvent event) async {
     if (event is MeetConnectionWarmupAck && event.clientId == clientId) {
-      initReceiver();
       event.callback('ready');
     }
+
     if (event is MeetConnectionOffer && event.clientId == clientId) {
-      _receiver?.connect(event.offer);
+      _receiver.answer(event.offer);
     }
 
     if (event is MeetConnectionAnswer && event.clientId == clientId) {
-      _transmitter?.setRemoteDescription(event.answer);
+      _transmitter.setRemoteDescription(event.answer);
     }
 
     if (event is MeetConnectionCandidate && event.clientId == clientId) {
       // Pay attention to the pcType here
       // RX candidate is for TX pc and vice versa
       if (event.pcType == PcType.tx) {
-        debugPrint('RX candidate is received');
-        _receiver?.addCandidate(event.candidate);
+        _receiver.addCandidate(event.candidate);
       } else {
-        debugPrint('TX candidate is received');
-        _transmitter?.addCandidate(event.candidate);
+        _transmitter.addCandidate(event.candidate);
       }
     }
   }
 
+  @override
   dispose() {
-    _transmitter?.dispose();
-    _receiver?.dispose();
+    super.dispose();
+    _transmitter.dispose();
+    _receiver.dispose();
     _eventSubscription.cancel();
-    renderer.srcObject = null;
-    renderer.dispose();
   }
 }

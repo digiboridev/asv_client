@@ -36,8 +36,8 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   init() {
     _socket = io(
-      // 'https://asv-socket.onrender.com',
-      'http://localhost:3000',
+      'https://asv-socket.onrender.com',
+      // 'http://localhost:3000',
       OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
         {'token': kRoomSocketToken, 'roomId': roomId, 'clientId': clientId},
       ).build(),
@@ -96,19 +96,19 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       'from': clientId,
       'to': toClientId,
     }, ack: (String data) {
-      c.complete(data);
+      if (!c.isCompleted) c.complete(data);
     });
 
     return c.future;
   }
 
-  @override
-  Future sendReady(String toClientId) async {
-    _socket.emit('rtc_ready', {
-      'from': clientId,
-      'to': toClientId,
-    });
-  }
+  // @override
+  // Future sendReady(String toClientId) async {
+  //   _socket.emit('rtc_ready', {
+  //     'from': clientId,
+  //     'to': toClientId,
+  //   });
+  // }
 
   @override
   Future sendOffer(String toClientId, RTCSessionDescription offer) async {
@@ -181,10 +181,10 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
           clientId: d.first['from'],
           callback: d.last,
         );
-      case 'rtc_ready':
-        return MeetConnectionReady(
-          clientId: data['from'],
-        );
+      // case 'rtc_ready':
+      //   return MeetConnectionReady(
+      //     clientId: data['from'],
+      //   );
       case 'rtc_offer':
         return MeetConnectionOffer(
           clientId: data['from'],

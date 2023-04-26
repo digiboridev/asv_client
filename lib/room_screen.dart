@@ -44,11 +44,11 @@ class _RoomScreenState extends State<RoomScreen> {
               flex: 2,
               child: Column(
                 children: [
-                  ElevatedButton(
-                      onPressed: () {
-                        roomClient.sendWarmupAck('asd');
-                      },
-                      child: Text('tesrt')),
+                  // ElevatedButton(
+                  //     onPressed: () {
+                  //       roomClient.sendWarmupAck('asd');
+                  //     },
+                  //     child: Text('tesrt')),
                   Expanded(
                     child: AnimatedBuilder(
                         animation: roomClient,

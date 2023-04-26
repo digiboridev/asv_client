@@ -18,9 +18,11 @@ class MeetView extends StatefulWidget {
 
 class _MeetViewState extends State<MeetView> {
   late final StreamSubscription<RoomEvent> eventSubscription;
-  MediaStream? localStream;
   final localRenderer = RTCVideoRenderer();
   List<MeetConnection> connections = [];
+
+  TrueStreamTrack? audioTrack;
+  TrueStreamTrack? videoTrack;
 
   @override
   void initState() {
@@ -34,7 +36,8 @@ class _MeetViewState extends State<MeetView> {
         connections.add(MeetConnection(
           clientId: event.clientId,
           roomClient: widget.roomClient,
-          txStream: localStream,
+          audioTrack: audioTrack,
+          videoTrack: videoTrack,
         ));
       }
 
@@ -44,7 +47,8 @@ class _MeetViewState extends State<MeetView> {
         connections.add(MeetConnection(
           clientId: event.clientId,
           roomClient: widget.roomClient,
-          txStream: localStream,
+          audioTrack: audioTrack,
+          videoTrack: videoTrack,
         ));
       }
 
@@ -58,36 +62,53 @@ class _MeetViewState extends State<MeetView> {
     });
   }
 
-  Future streamCamera() async {
-    stopStream();
-    final stream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': true});
-    localStream = stream;
-    localRenderer.srcObject = stream;
+  Future enableAudio() async {
+    if (audioTrack != null) await disableVideo();
+
+    final stream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
+    audioTrack = TrueStreamTrack(track: stream.getAudioTracks().first, stream: stream);
     for (var connection in connections) {
-      connection.setTxStream = stream;
+      await connection.setAudioTrack(audioTrack);
     }
   }
 
-  Future streamDisplay() async {
-    stopStream();
+  Future disableAudio() async {
+    audioTrack?.track.stop();
+    audioTrack = null;
+    for (var connection in connections) {
+      await connection.setAudioTrack(null);
+    }
+  }
+
+  Future enableCamera() async {
+    if (videoTrack != null) await disableVideo();
+
+    final stream = await navigator.mediaDevices.getUserMedia({'audio': false, 'video': true});
+    videoTrack = TrueStreamTrack(track: stream.getVideoTracks().first, stream: stream);
+    for (var connection in connections) {
+      await connection.setVideoTrack(videoTrack);
+    }
+    localRenderer.srcObject = stream;
+  }
+
+  Future enableDisplay() async {
+    if (videoTrack != null) await disableVideo();
+
     final stream = await navigator.mediaDevices.getDisplayMedia({'audio': false, 'video': true});
-    localStream = stream;
-    localRenderer.srcObject = stream;
+    videoTrack = TrueStreamTrack(track: stream.getVideoTracks().first, stream: stream);
     for (var connection in connections) {
-      connection.setTxStream = stream;
+      await connection.setVideoTrack(videoTrack);
     }
+    localRenderer.srcObject = stream;
   }
 
-  stopStream() async {
+  Future disableVideo() async {
+    await videoTrack?.track.stop();
+    videoTrack = null;
     for (var connection in connections) {
-      connection.setTxStream = null;
-    }
-    if (kIsWeb) {
-      localStream?.getTracks().forEach((track) => track.stop());
+      await connection.setVideoTrack(null);
     }
     localRenderer.srcObject = null;
-    localStream?.dispose();
-    localStream = null;
   }
 
   @override
@@ -97,11 +118,10 @@ class _MeetViewState extends State<MeetView> {
     for (var connection in connections) {
       connection.dispose();
     }
-    if (kIsWeb) {
-      localStream?.getTracks().forEach((track) => track.stop());
-    }
+    localRenderer.srcObject = null;
     localRenderer.dispose();
-    localStream?.dispose();
+    audioTrack?.track.stop();
+    videoTrack?.track.stop();
   }
 
   @override
@@ -109,16 +129,24 @@ class _MeetViewState extends State<MeetView> {
     return Column(
       children: [
         TextButton(
-          onPressed: streamCamera,
-          child: const Text('Start camera'),
+          onPressed: enableAudio,
+          child: const Text('Enable audio'),
         ),
         TextButton(
-          onPressed: streamDisplay,
-          child: const Text('Start display'),
+          onPressed: disableAudio,
+          child: const Text('Disable audio'),
         ),
         TextButton(
-          onPressed: stopStream,
-          child: const Text('Stop stream'),
+          onPressed: enableCamera,
+          child: const Text('Enable camera'),
+        ),
+        TextButton(
+          onPressed: enableDisplay,
+          child: const Text('Enable display'),
+        ),
+        TextButton(
+          onPressed: disableVideo,
+          child: const Text('Disable video'),
         ),
         Expanded(
           child: SingleChildScrollView(
@@ -138,11 +166,8 @@ class _MeetViewState extends State<MeetView> {
                 ),
                 ...connections
                     .map(
-                      (connection) => Container(
-                        color: Colors.blue,
-                        width: 200,
-                        height: 200,
-                        child: RTCVideoView(connection.renderer),
+                      (connection) => OpponentTile(
+                        connection: connection,
                       ),
                     )
                     .toList()
@@ -152,5 +177,81 @@ class _MeetViewState extends State<MeetView> {
         ),
       ],
     );
+  }
+}
+
+class OpponentTile extends StatelessWidget {
+  const OpponentTile({
+    required this.connection,
+    super.key,
+  });
+
+  final MeetConnection connection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        color: Colors.blue,
+        width: 200,
+        height: 200,
+        child: AnimatedBuilder(
+          animation: connection,
+          builder: (context, child) {
+            return Column(
+              children: [
+                if (connection.audioStream != null) const Text('Audio'),
+                if (connection.videoStream != null) const Text('Video'),
+                if (connection.audioStream != null)
+                  SizedBox.shrink(
+                    child: Renderer(
+                      stream: connection.audioStream!,
+                    ),
+                  ),
+                if (connection.videoStream != null)
+                  Expanded(
+                    child: Renderer(
+                      stream: connection.videoStream!,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ));
+  }
+}
+
+class Renderer extends StatefulWidget {
+  const Renderer({
+    required this.stream,
+    super.key,
+  });
+
+  final MediaStream stream;
+
+  @override
+  State<Renderer> createState() => _RendererState();
+}
+
+class _RendererState extends State<Renderer> {
+  late final RTCVideoRenderer rtcVideoRenderer;
+
+  @override
+  void initState() {
+    super.initState();
+    rtcVideoRenderer = RTCVideoRenderer();
+    rtcVideoRenderer.initialize();
+    rtcVideoRenderer.srcObject = widget.stream;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    rtcVideoRenderer.srcObject = null;
+    rtcVideoRenderer.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(child: RTCVideoView(rtcVideoRenderer));
   }
 }

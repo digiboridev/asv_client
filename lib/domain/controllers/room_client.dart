@@ -17,7 +17,7 @@ abstract class RoomClient extends ChangeNotifier {
   Future sendTypingCancel();
   // Future sendWarmup(String toClientId);
   Future<String> sendWarmupAck(String toClientId);
-  Future sendReady(String toClientId);
+  // Future sendReady(String toClientId);
   Future sendOffer(String toClientId, RTCSessionDescription offer);
   Future sendAnswer(String toClientId, RTCSessionDescription answer);
   Future sendCandidate(String toClientId, PcType pcType, RTCIceCandidate candidate);
@@ -87,10 +87,10 @@ class MeetConnectionWarmupAck extends RTCEvent {
   final Function(String) callback;
 }
 
-class MeetConnectionReady extends RTCEvent {
-  MeetConnectionReady({required this.clientId});
-  final String clientId;
-}
+// class MeetConnectionReady extends RTCEvent {
+//   MeetConnectionReady({required this.clientId});
+//   final String clientId;
+// }
 
 class MeetConnectionOffer extends RTCEvent {
   MeetConnectionOffer({required this.offer, required this.clientId});
