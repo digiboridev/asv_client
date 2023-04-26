@@ -180,27 +180,43 @@ class Receiver {
       if (track.streams.isEmpty) return;
 
       if (track.track.kind == 'audio') {
-        _audioStream = track.streams.first;
+        // _audioStream = track.streams.first;
+        track.track.onMute = () {
+          debugPrint('rx audio onMuted');
+          _audioStream = null;
+        };
+        track.track.onUnMute = () {
+          debugPrint('rx audio onUnmuted');
+          _audioStream = track.streams.first;
+        };
       }
       if (track.track.kind == 'video') {
-        _videoStream = track.streams.first;
+        // _videoStream = track.streams.first;
+        track.track.onMute = () {
+          debugPrint('rx video onMuted');
+          _videoStream = null;
+        };
+        track.track.onUnMute = () {
+          debugPrint('rx video onUnmuted');
+          _videoStream = track.streams.first;
+        };
       }
 
       notifyListeners();
     };
 
-    _pc!.onRemoveTrack = (stream, track) {
-      debugPrint('rx onRemoveTrack');
+    // _pc!.onRemoveTrack = (stream, track) {
+    //   debugPrint('rx onRemoveTrack');
 
-      if (track.kind == 'audio') {
-        _audioStream = null;
-      }
+    //   if (track.kind == 'audio') {
+    //     _audioStream = null;
+    //   }
 
-      if (track.kind == 'video') {
-        _videoStream = null;
-      }
-      notifyListeners();
-    };
+    //   if (track.kind == 'video') {
+    //     _videoStream = null;
+    //   }
+    //   notifyListeners();
+    // };
   }
 
   answer(RTCSessionDescription offer) async {
