@@ -1,10 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 // ignore_for_file: prefer_final_fields
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-
 import 'package:asv_client/core/constants.dart';
 import 'package:asv_client/domain/controllers/room_client.dart';
 
@@ -183,19 +181,24 @@ class Receiver {
 
       if (track.track.kind == 'audio') {
         _audioStream = track.streams.first;
-        track.track.onMute = () {
-          _audioStream = null;
-          debugPrint('rx onMute');
-        };
       }
       if (track.track.kind == 'video') {
         _videoStream = track.streams.first;
-        track.track.onMute = () {
-          _videoStream = null;
-          debugPrint('rx onMute');
-        };
       }
 
+      notifyListeners();
+    };
+
+    _pc!.onRemoveTrack = (stream, track) {
+      debugPrint('rx onRemoveTrack');
+
+      if (track.kind == 'audio') {
+        _audioStream = null;
+      }
+
+      if (track.kind == 'video') {
+        _videoStream = null;
+      }
       notifyListeners();
     };
   }
