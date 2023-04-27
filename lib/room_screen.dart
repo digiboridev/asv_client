@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:asv_client/chat_view.dart';
-import 'package:asv_client/controllers/room_client_socket_impl.dart';
-import 'package:asv_client/domain/controllers/room_client.dart';
+import 'package:asv_client/data/room_client_socket_impl.dart';
+import 'package:asv_client/data/room_client.dart';
 import 'package:asv_client/meet_view.dart';
 
 class RoomScreen extends StatefulWidget {

@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:asv_client/room_screen.dart';
-import 'package:socket_io_client/socket_io_client.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,25 +30,9 @@ class Main extends StatefulWidget {
 }
 
 class MainState extends State<Main> {
-  late final Socket socket;
-
   @override
   void initState() {
     super.initState();
-    // socket = io('http://localhost:3000', OptionBuilder().setTransports(['websocket']).disableAutoConnect().setAuth({'token': '123'}).build());
-
-    // socket.onAny((event, data) {
-    //   print('event: $event, data: $data');
-    //   setState(() {});
-
-    //   if (event == 'error') {
-    //     // socket.destroy();
-    //   }
-    // });
-
-    // socket.on('msg', (data) {
-    //   print('msg: $data');
-    // });
   }
 
   toRoom() {
@@ -57,45 +40,14 @@ class MainState extends State<Main> {
     // Navigator.of(context).push(MaterialPageRoute(builder: (context) => RoomScreen()));
   }
 
-  // connect() {
-  //   socket.connect();
-  // }
-
-  // disconnect() {
-  //   socket.disconnect();
-  // }
-
-  // sendMessage(String message) {
-  //   socket.emit('msg', message);
-  // }
-
-  // sendAkw(String message) {
-  //   socket.emitWithAck('ack', message, ack: (data) {
-  //     print('ack: $data');
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SizedBox.expand(
         child: Column(
           children: [
-            Text('46'),
-            // Text('Connected: ${socket.connected}'),
-            // Text('Disconnected: ${socket.disconnected}'),
-            // Text('Active: ${socket.active}'),
-            // Text('Id: ${socket.id}'),
-            // SizedBox(height: 8),
+            const Text('47'),
             ElevatedButton(onPressed: toRoom, child: const Text('To Room')),
-            // SizedBox(height: 8),
-            // ElevatedButton(onPressed: connect, child: const Text('Connect')),
-            // SizedBox(height: 8),
-            // ElevatedButton(onPressed: disconnect, child: const Text('Disconnect')),
-            // SizedBox(height: 8),
-            // ElevatedButton(onPressed: () => sendMessage('test'), child: const Text('Send Message')),
-            // SizedBox(height: 8),
-            // ElevatedButton(onPressed: () => sendAkw('test ack'), child: const Text('Send Message with Ack')),
           ],
         ),
       ),
@@ -149,7 +101,7 @@ class _RoomIdDialogState extends State<RoomIdDialog> {
                   'Enter room id',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: roomIdController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -168,7 +120,7 @@ class _RoomIdDialogState extends State<RoomIdDialog> {
                     labelText: 'Room id',
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [

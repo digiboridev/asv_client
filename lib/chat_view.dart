@@ -1,7 +1,8 @@
 import 'dart:async';
+import 'package:asv_client/data/room_events.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:asv_client/domain/controllers/room_client.dart';
+import 'package:asv_client/data/room_client.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({
@@ -35,7 +36,7 @@ class _ChatViewState extends State<ChatView> {
 
   eventHandler(RoomEvent event) {
     // Handle chat history related events
-    if (event is ChatMessage || event is ClientJoin || event is ClientLeave) {
+    if (event is NewMessage || event is ClientJoin || event is ClientLeave) {
       setState(() => chatHistory.add(event));
 
       // Scroll list to bottom
@@ -120,7 +121,7 @@ class _ChatViewState extends State<ChatView> {
               itemBuilder: (context, index) {
                 final chatItem = chatHistory[index];
 
-                if (chatItem is ChatMessage) {
+                if (chatItem is NewMessage) {
                   return CLMessageTile(message: chatItem);
                 }
 
@@ -213,7 +214,7 @@ class _MessageFieldState extends State<MessageField> {
 class CLMessageTile extends StatefulWidget {
   const CLMessageTile({super.key, required this.message});
 
-  final ChatMessage message;
+  final NewMessage message;
 
   @override
   State<CLMessageTile> createState() => _CLMessageTileState();
