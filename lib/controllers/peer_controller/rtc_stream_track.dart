@@ -1,10 +1,18 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-class TrueStreamTrack {
+enum RTCTrackKind {
+  audio,
+  camera,
+  display,
+}
+
+class RTCStreamTrack {
   final MediaStreamTrack track;
   final MediaStream stream;
-  TrueStreamTrack({
+  final RTCTrackKind kind;
+  RTCStreamTrack({
     required this.track,
     required this.stream,
+    required this.kind,
   });
 }

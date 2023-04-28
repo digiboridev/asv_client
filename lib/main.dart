@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:asv_client/room_screen.dart';
+import 'package:asv_client/screens/room/room_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -46,7 +46,7 @@ class MainState extends State<Main> {
       body: SizedBox.expand(
         child: Column(
           children: [
-            const Text('47'),
+            const Text('48'),
             ElevatedButton(onPressed: toRoom, child: const Text('To Room')),
           ],
         ),

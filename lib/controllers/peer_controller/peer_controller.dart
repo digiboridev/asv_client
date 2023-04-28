@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:asv_client/controllers/peer_controller/connection_state.dart';
 import 'package:asv_client/controllers/peer_controller/receiver.dart';
 import 'package:asv_client/controllers/peer_controller/transmitter.dart';
-import 'package:asv_client/controllers/peer_controller/true_stream_track.dart';
+import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/data/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -12,8 +12,8 @@ class RTCPeerController extends ChangeNotifier {
   RTCPeerController({
     required this.clientId,
     required this.roomClient,
-    TrueStreamTrack? audioTrack,
-    TrueStreamTrack? videoTrack,
+    RTCStreamTrack? audioTrack,
+    RTCStreamTrack? videoTrack,
   }) {
     _eventSubscription = roomClient.eventStream.listen(_eventHandler);
 
@@ -45,8 +45,8 @@ class RTCPeerController extends ChangeNotifier {
   MediaStream? get audioStream => _receiver.audioStream;
   MediaStream? get videoStream => _receiver.videoStream;
 
-  Future setAudioTrack(TrueStreamTrack? track) => _transmitter.setAudioTrack(track);
-  Future setVideoTrack(TrueStreamTrack? track) => _transmitter.setVideoTrack(track);
+  Future setAudioTrack(RTCStreamTrack? track) => _transmitter.setAudioTrack(track);
+  Future setVideoTrack(RTCStreamTrack? track) => _transmitter.setVideoTrack(track);
 
   Future<String> _sendWarmup() => roomClient.sendWarmupAck(clientId);
   Future _sendOffer(RTCSessionDescription offer) => roomClient.sendOffer(clientId, offer);

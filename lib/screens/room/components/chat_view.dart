@@ -40,7 +40,7 @@ class _ChatViewState extends State<ChatView> {
       setState(() => chatHistory.add(event));
 
       // Scroll list to bottom
-      if (scrollController.position.maxScrollExtent == scrollController.offset) {
+      if (scrollController.position.extentAfter < 200) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           scrollController.animateTo(
@@ -115,6 +115,7 @@ class _ChatViewState extends State<ChatView> {
             },
             blendMode: BlendMode.dstOut,
             child: ListView.separated(
+              physics: BouncingScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 12, top: 12),
               controller: scrollController,
               itemCount: chatHistory.length,
@@ -180,7 +181,6 @@ class _MessageFieldState extends State<MessageField> {
           BoxShadow(
             color: Colors.black.withOpacity(0.025),
             blurRadius: 8,
-            spreadRadius: 4,
           ),
         ],
       ),
@@ -238,8 +238,8 @@ class _CLMessageTileState extends State<CLMessageTile> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.white,
@@ -248,7 +248,6 @@ class _CLMessageTileState extends State<CLMessageTile> {
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
-            spreadRadius: 4,
             offset: const Offset(2, 4),
           ),
         ],

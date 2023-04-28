@@ -1,5 +1,5 @@
 import 'package:asv_client/controllers/peer_controller/connection_state.dart';
-import 'package:asv_client/controllers/peer_controller/true_stream_track.dart';
+import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/core/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -10,8 +10,8 @@ class Transmitter {
     required this.sendWarmup,
     required this.sendIceCandy,
     required this.sendOffer,
-    TrueStreamTrack? audioTrack,
-    TrueStreamTrack? videoTrack,
+    RTCStreamTrack? audioTrack,
+    RTCStreamTrack? videoTrack,
   }) {
     _audioTrack = audioTrack;
     _videoTrack = videoTrack;
@@ -26,8 +26,8 @@ class Transmitter {
   bool _disposed = false;
   RTCPeerConnection? _pc;
 
-  TrueStreamTrack? _audioTrack;
-  TrueStreamTrack? _videoTrack;
+  RTCStreamTrack? _audioTrack;
+  RTCStreamTrack? _videoTrack;
   RTCRtpSender? _audioSender;
   RTCRtpSender? _videoSender;
   RTCConnectionState _connectionState = RTCConnectionState.idle;
@@ -91,7 +91,7 @@ class Transmitter {
     attachVideoTrack();
   }
 
-  Future setAudioTrack(TrueStreamTrack? track) async {
+  Future setAudioTrack(RTCStreamTrack? track) async {
     _audioTrack = track;
     if (_pc != null) await attachAudioTrack();
   }
@@ -104,7 +104,7 @@ class Transmitter {
     }
   }
 
-  Future setVideoTrack(TrueStreamTrack? track) async {
+  Future setVideoTrack(RTCStreamTrack? track) async {
     _videoTrack = track;
     if (_pc != null) await attachVideoTrack();
   }

@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'package:asv_client/controllers/peer_controller/peer_controller.dart';
-import 'package:asv_client/controllers/peer_controller/true_stream_track.dart';
+import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/data/room_events.dart';
 import 'package:asv_client/utils/first_where_or_null.dart';
 import 'package:flutter/material.dart';
@@ -21,19 +21,23 @@ class MeetViewController extends ChangeNotifier {
   final List<RTCPeerController> _peers = [];
   List<RTCPeerController> get peers => List.unmodifiable(_peers);
 
-  TrueStreamTrack? _audioTrack;
-  TrueStreamTrack? _videoTrack;
-  TrueStreamTrack? get audioTrack => _audioTrack;
-  TrueStreamTrack? get videoTrack => _videoTrack;
+  RTCStreamTrack? _audioTrack;
+  RTCStreamTrack? _videoTrack;
+  RTCStreamTrack? get audioTrack => _audioTrack;
+  RTCStreamTrack? get videoTrack => _videoTrack;
 
   Future enableAudio() async {
     if (_audioTrack != null) await disableVideo();
 
     final stream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
-    _audioTrack = TrueStreamTrack(track: stream.getAudioTracks().first, stream: stream);
+    final track = stream.getAudioTracks().first;
+    track.onEnded = () => disableAudio();
+
+    _audioTrack = RTCStreamTrack(track: track, stream: stream, kind: RTCTrackKind.audio);
     for (var peer in _peers) {
       await peer.setAudioTrack(_audioTrack);
     }
+    notifyListeners();
   }
 
   Future disableAudio() async {
@@ -42,28 +46,35 @@ class MeetViewController extends ChangeNotifier {
     for (var peer in _peers) {
       await peer.setAudioTrack(null);
     }
+    notifyListeners();
   }
 
   Future enableCamera() async {
     if (_videoTrack != null) await disableVideo();
 
     final stream = await navigator.mediaDevices.getUserMedia({'audio': false, 'video': true});
-    _videoTrack = TrueStreamTrack(track: stream.getVideoTracks().first, stream: stream);
+    final track = stream.getVideoTracks().first;
+    track.onEnded = () => disableVideo();
+
+    _videoTrack = RTCStreamTrack(track: track, stream: stream, kind: RTCTrackKind.camera);
     for (var peer in _peers) {
       await peer.setVideoTrack(_videoTrack);
     }
-    // localRenderer.srcObject = stream;
+    notifyListeners();
   }
 
   Future enableDisplay() async {
     if (_videoTrack != null) await disableVideo();
 
     final stream = await navigator.mediaDevices.getDisplayMedia({'audio': false, 'video': true});
-    _videoTrack = TrueStreamTrack(track: stream.getVideoTracks().first, stream: stream);
+    final track = stream.getVideoTracks().first;
+    track.onEnded = () => disableVideo();
+
+    _videoTrack = RTCStreamTrack(track: track, stream: stream, kind: RTCTrackKind.display);
     for (var peer in _peers) {
       await peer.setVideoTrack(_videoTrack);
     }
-    // localRenderer.srcObject = stream;
+    notifyListeners();
   }
 
   Future disableVideo() async {
@@ -72,7 +83,7 @@ class MeetViewController extends ChangeNotifier {
     for (var peer in _peers) {
       await peer.setVideoTrack(null);
     }
-    // localRenderer.srcObject = null;
+    notifyListeners();
   }
 
   roomEventHandler(RoomEvent event) {
