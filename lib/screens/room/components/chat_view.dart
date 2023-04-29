@@ -1,70 +1,11 @@
-import 'dart:async';
-import 'package:asv_client/data/room_events.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:asv_client/data/room_client.dart';
+import 'package:asv_client/data/room_events.dart';
+import 'package:asv_client/screens/room/room_screen.dart';
 
-class ChatView extends StatefulWidget {
-  const ChatView({
-    super.key,
-    required this.client,
-  });
-
-  final RoomClient client;
-
-  @override
-  State<ChatView> createState() => _ChatViewState();
-}
-
-class _ChatViewState extends State<ChatView> {
-  final ScrollController scrollController = ScrollController();
-  late final StreamSubscription _messagesSubscription;
-  List<RoomEvent> chatHistory = []; // Chat history related events only (join, leave, message)
-  Set<String> typingClients = {}; // Clients currently typing
-
-  @override
-  void initState() {
-    super.initState();
-    _messagesSubscription = widget.client.eventStream.listen(eventHandler);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _messagesSubscription.cancel();
-  }
-
-  eventHandler(RoomEvent event) {
-    // Handle chat history related events
-    if (event is NewMessage || event is ClientJoin || event is ClientLeave) {
-      setState(() => chatHistory.add(event));
-
-      // Scroll list to bottom
-      if (scrollController.position.extentAfter < 200) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          scrollController.animateTo(
-            scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOut,
-          );
-        });
-      }
-    }
-
-    // Handle typing related events
-    if (event is ClientTyping) {
-      setState(() => typingClients.add(event.clientId));
-    }
-
-    if (event is ClientTypingCancel && typingClients.contains(event.clientId)) {
-      setState(() => typingClients.remove(event.clientId));
-    }
-
-    if (event is ClientLeave && typingClients.contains(event.clientId)) {
-      setState(() => typingClients.remove(event.clientId));
-    }
-  }
+class ChatView extends StatelessWidget {
+  const ChatView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +26,7 @@ class _ChatViewState extends State<ChatView> {
           const Text('Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           Visibility(
-            visible: typingClients.isNotEmpty,
+            visible: ChatViewControllerProvider.watch(context).typingClients.isNotEmpty,
             maintainState: true,
             maintainAnimation: true,
             maintainSize: true,
@@ -95,7 +36,7 @@ class _ChatViewState extends State<ChatView> {
                 horizontal: 16,
               ),
               child: Text(
-                '${typingClients.join(', ')} ${typingClients.length > 1 ? 'are' : 'is'} typing...',
+                '${ChatViewControllerProvider.watch(context).typingClients.join(', ')} ${ChatViewControllerProvider.watch(context).typingClients.length > 1 ? 'are' : 'is'} typing...',
                 style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
                 textAlign: TextAlign.start,
                 overflow: TextOverflow.ellipsis,
@@ -115,12 +56,12 @@ class _ChatViewState extends State<ChatView> {
             },
             blendMode: BlendMode.dstOut,
             child: ListView.separated(
+              reverse: true,
               physics: BouncingScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 12, top: 12),
-              controller: scrollController,
-              itemCount: chatHistory.length,
+              itemCount: ChatViewControllerProvider.watch(context).chatHistory.length,
               itemBuilder: (context, index) {
-                final chatItem = chatHistory[index];
+                final chatItem = ChatViewControllerProvider.watch(context).chatHistory.reversed.toList()[index];
 
                 if (chatItem is NewMessage) {
                   return CLMessageTile(message: chatItem);
@@ -138,7 +79,7 @@ class _ChatViewState extends State<ChatView> {
               separatorBuilder: (context, index) => const SizedBox(height: 16),
             ),
           )),
-          MessageField(client: widget.client),
+          MessageField(),
         ],
       ),
     );
@@ -146,9 +87,7 @@ class _ChatViewState extends State<ChatView> {
 }
 
 class MessageField extends StatefulWidget {
-  const MessageField({super.key, required this.client});
-
-  final RoomClient client;
+  const MessageField({super.key});
 
   @override
   State<MessageField> createState() => _MessageFieldState();
@@ -159,17 +98,16 @@ class _MessageFieldState extends State<MessageField> {
 
   sendMessage() {
     if (_controller.text.isEmpty) return;
-    widget.client.sendMessage(_controller.text);
-    widget.client.sendTypingCancel();
+    ChatViewControllerProvider.read(context).sendMessage(_controller.text);
     _controller.clear();
   }
 
-  startTyping() {
-    widget.client.sendTyping();
+  startedTyping() {
+    ChatViewControllerProvider.read(context).startedTyping();
   }
 
-  stopTyping() {
-    widget.client.sendTypingCancel();
+  stoppedTyping() {
+    ChatViewControllerProvider.read(context).stoppedTyping();
   }
 
   @override
@@ -191,9 +129,9 @@ class _MessageFieldState extends State<MessageField> {
               controller: _controller,
               onChanged: (value) {
                 if (value.isEmpty) {
-                  stopTyping();
+                  stoppedTyping();
                 } else {
-                  startTyping();
+                  startedTyping();
                 }
               },
               onEditingComplete: sendMessage,

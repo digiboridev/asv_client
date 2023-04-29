@@ -1,56 +1,29 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
-
 import 'package:asv_client/controllers/peer_controller/connection_state.dart';
 import 'package:asv_client/screens/room/components/meet_buttons.dart';
+import 'package:asv_client/screens/room/room_screen.dart';
 import 'package:flutter/material.dart';
-
 import 'package:asv_client/controllers/meet_view_controller.dart';
 import 'package:asv_client/controllers/peer_controller/peer_controller.dart';
 import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
-import 'package:asv_client/data/room_client.dart';
 import 'package:asv_client/widgets/rtc_stream_renderer.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
 
-class MeetView extends StatefulWidget {
-  const MeetView({super.key, required this.roomClient});
-
-  final RoomClient roomClient;
-
-  @override
-  State<MeetView> createState() => _MeetViewState();
-}
-
-class _MeetViewState extends State<MeetView> {
-  late final MeetViewController _meetViewController;
-  @override
-  void initState() {
-    super.initState();
-    _meetViewController = MeetViewController(roomClient: widget.roomClient);
-  }
-
-  @override
-  void dispose() {
-    _meetViewController.dispose();
-    super.dispose();
-  }
+class MeetView extends StatelessWidget {
+  const MeetView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    MeetViewController meetViewController = MeetViewControllerProvider.watch(context);
     return Container(
       color: Colors.grey.shade100,
       child: Column(
         children: [
           SizedBox(height: 16),
-          Expanded(
-            child: AnimatedBuilder(
-                animation: _meetViewController,
-                builder: (context, _) {
-                  return MeetViewBody(meetViewController: _meetViewController);
-                }),
-          ),
+          Expanded(child: MeetViewBody(meetViewController: meetViewController)),
           SizedBox(height: 16),
-          MeetButtons(meetViewController: _meetViewController),
+          MeetButtons(meetViewController: meetViewController),
           SizedBox(height: 16),
         ],
       ),

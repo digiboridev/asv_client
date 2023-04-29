@@ -3,12 +3,18 @@ import 'package:asv_client/data/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+enum RoomConnectionState {
+  connecting,
+  connected,
+  disconnected,
+  connectError,
+}
+
 enum PcType { tx, rx }
 
 abstract class RoomClient extends ChangeNotifier {
-  bool get isConnected;
-  bool get isDisconnected;
-  bool get isActive;
+  connect();
+  RoomConnectionState get connectionState;
   String get roomId;
   String get clientId;
   Stream<RoomEvent> get eventStream;

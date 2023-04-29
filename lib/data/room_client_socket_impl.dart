@@ -18,6 +18,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   late final Timer _signalTimer;
   final String _roomId;
   final String _clientId = Random().nextInt(1000000).toString();
+  bool _disposed = false;
 
   @override
   String get roomId => _roomId;
@@ -25,12 +26,9 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   String get clientId => _clientId;
 
   // Connection status section
+  RoomConnectionState _connectionState = RoomConnectionState.connecting;
   @override
-  bool get isConnected => _socket.connected;
-  @override
-  bool get isDisconnected => _socket.disconnected;
-  @override
-  bool get isActive => _socket.active;
+  RoomConnectionState get connectionState => _connectionState;
   // End of connection status section
 
   final _eventsStreamController = StreamController<RoomEvent>.broadcast();
@@ -41,25 +39,60 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     _socket = io(
       'https://asv-socket.onrender.com',
       // 'http://localhost:3000',
-      OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
+      OptionBuilder().enableForceNew().disableAutoConnect().disableReconnection().setTransports(['websocket']).setAuth(
         {'token': kRoomSocketToken, 'roomId': roomId, 'clientId': clientId},
       ).build(),
     );
 
     _socket.onAny((event, data) {
+      if (_disposed) return;
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
       if (roomEvent is ClientJoin) _socket.emit('presence_signal', clientId);
-      notifyListeners();
     });
 
     _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _socket.emit('presence_signal', clientId);
     });
+
+    _socket.on('error', (data) {
+      debugPrint('socket error: $data');
+      if (_disposed) return;
+      if (_connectionState != RoomConnectionState.connecting) return;
+      _connectionState = RoomConnectionState.connectError;
+      notifyListeners();
+      _socket.disconnect();
+    });
+
+    _socket.on('connect', (data) {
+      debugPrint('socket connect');
+      if (_disposed) return;
+      _connectionState = RoomConnectionState.connected;
+      notifyListeners();
+    });
+
+    _socket.on('disconnect', (data) {
+      debugPrint('socket disconnect');
+      if (_disposed) return;
+      _connectionState = RoomConnectionState.disconnected;
+      notifyListeners();
+      connect();
+    });
+
+    connect();
+  }
+
+  @override
+  connect() async {
+    await Future.microtask(() => null);
+    _connectionState = RoomConnectionState.connecting;
+    notifyListeners();
+    _socket.connect();
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _socket.dispose();
     _eventsStreamController.close();
     _signalTimer.cancel();
