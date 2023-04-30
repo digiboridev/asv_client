@@ -3,10 +3,10 @@ import 'package:asv_client/controllers/peer_controller/connection_state.dart';
 import 'package:asv_client/controllers/peer_controller/receiver.dart';
 import 'package:asv_client/controllers/peer_controller/transmitter.dart';
 import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
-import 'package:asv_client/data/room_events.dart';
+import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:asv_client/data/room_client.dart';
+import 'package:asv_client/data/transport/room_client.dart';
 
 class RTCPeerController extends ChangeNotifier {
   RTCPeerController({

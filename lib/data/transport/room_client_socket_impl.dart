@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:asv_client/data/room_events.dart';
+import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:asv_client/data/room_client.dart';
+import 'package:asv_client/data/transport/room_client.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 

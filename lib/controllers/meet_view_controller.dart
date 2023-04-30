@@ -2,10 +2,10 @@
 import 'dart:async';
 import 'package:asv_client/controllers/peer_controller/peer_controller.dart';
 import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
-import 'package:asv_client/data/room_events.dart';
+import 'package:asv_client/data/transport/room_events.dart';
 import 'package:asv_client/utils/first_where_or_null.dart';
 import 'package:flutter/material.dart';
-import 'package:asv_client/data/room_client.dart';
+import 'package:asv_client/data/transport/room_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MeetViewController extends ChangeNotifier {

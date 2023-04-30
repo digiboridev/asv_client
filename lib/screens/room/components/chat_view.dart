@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:asv_client/data/models/chat_entries.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:asv_client/data/room_events.dart';
 import 'package:asv_client/screens/room/room_screen.dart';
 
 class ChatView extends StatelessWidget {
@@ -61,18 +61,18 @@ class ChatView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12, top: 12),
               itemCount: ChatViewControllerProvider.watch(context).chatHistory.length,
               itemBuilder: (context, index) {
-                final chatItem = ChatViewControllerProvider.watch(context).chatHistory.reversed.toList()[index];
+                final chatEntry = ChatViewControllerProvider.watch(context).chatHistory.reversed.toList()[index];
 
-                if (chatItem is NewMessage) {
-                  return CLMessageTile(message: chatItem);
+                if (chatEntry is Message) {
+                  return CLMessageTile(message: chatEntry);
                 }
 
-                if (chatItem is ClientJoin) {
-                  return CLJoinTile(event: chatItem);
+                if (chatEntry is UserJoined) {
+                  return CLJoinTile(event: chatEntry);
                 }
 
-                if (chatItem is ClientLeave) {
-                  return CLLeaveTile(event: chatItem);
+                if (chatEntry is UserLeft) {
+                  return CLLeaveTile(event: chatEntry);
                 }
                 return const SizedBox();
               },
@@ -152,7 +152,7 @@ class _MessageFieldState extends State<MessageField> {
 class CLMessageTile extends StatefulWidget {
   const CLMessageTile({super.key, required this.message});
 
-  final NewMessage message;
+  final Message message;
 
   @override
   State<CLMessageTile> createState() => _CLMessageTileState();
@@ -198,7 +198,7 @@ class _CLMessageTileState extends State<CLMessageTile> {
             children: [
               Flexible(
                 child: Text(
-                  widget.message.clientId,
+                  widget.message.userName,
                   style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -226,7 +226,7 @@ class _CLMessageTileState extends State<CLMessageTile> {
 class CLJoinTile extends StatefulWidget {
   const CLJoinTile({super.key, required this.event});
 
-  final ClientJoin event;
+  final UserJoined event;
 
   @override
   State<CLJoinTile> createState() => _CLJoinTileState();
@@ -238,7 +238,7 @@ class _CLJoinTileState extends State<CLJoinTile> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Text(
-        '${widget.event.clientId} joined',
+        '${widget.event.userName} joined',
         style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
@@ -250,7 +250,7 @@ class _CLJoinTileState extends State<CLJoinTile> {
 class CLLeaveTile extends StatefulWidget {
   const CLLeaveTile({super.key, required this.event});
 
-  final ClientLeave event;
+  final UserLeft event;
 
   @override
   State<CLLeaveTile> createState() => _CLLeaveTileState();
@@ -262,7 +262,7 @@ class _CLLeaveTileState extends State<CLLeaveTile> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Text(
-        '${widget.event.clientId} left',
+        '${widget.event.userName} left',
         style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,

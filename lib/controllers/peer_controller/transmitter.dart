@@ -52,7 +52,7 @@ class Transmitter {
     if (_disposed) return;
     debugPrint('tx setting up');
 
-    _pc = await createPeerConnection(peerConfig);
+    _pc = await createPeerConnection(kPeerConfig);
 
     _pc!.onIceCandidate = (candidate) {
       debugPrint('tx onIceCandidate: $candidate');

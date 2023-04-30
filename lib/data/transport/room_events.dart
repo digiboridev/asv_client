@@ -1,4 +1,4 @@
-import 'package:asv_client/data/room_client.dart';
+import 'package:asv_client/data/transport/room_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 abstract class RoomEvent {}
