@@ -64,24 +64,26 @@ class Receiver {
         track.track.onMute = () {
           debugPrint('rx audio onMuted');
           _audioStream = null;
+          notifyListeners();
         };
         track.track.onUnMute = () {
           debugPrint('rx audio onUnmuted');
           _audioStream = track.streams.first;
+          notifyListeners();
         };
       }
       if (track.track.kind == 'video') {
         track.track.onMute = () {
           debugPrint('rx video onMuted');
           _videoStream = null;
+          notifyListeners();
         };
         track.track.onUnMute = () {
           debugPrint('rx video onUnmuted');
           _videoStream = track.streams.first;
+          notifyListeners();
         };
       }
-
-      notifyListeners();
     };
   }
 

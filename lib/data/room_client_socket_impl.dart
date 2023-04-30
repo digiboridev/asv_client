@@ -51,7 +51,6 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
       if (roomEvent is ClientJoin) _socket.emit('presence_signal', clientId);
-      debugPrint('socket event: $event, data: $data');
     });
 
     _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -62,6 +61,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       debugPrint('socket error: $data');
       if (_disposed) return;
       _connectionState = RoomConnectionState.connectError;
+      _eventsStreamController.add(ConnectionStateChanged(state: _connectionState));
       notifyListeners();
     });
 
@@ -69,6 +69,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       debugPrint('socket connect');
       if (_disposed) return;
       _connectionState = RoomConnectionState.connected;
+      _eventsStreamController.add(ConnectionStateChanged(state: _connectionState));
       notifyListeners();
     });
 
@@ -76,6 +77,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       debugPrint('socket disconnect');
       if (_disposed) return;
       _connectionState = RoomConnectionState.disconnected;
+      _eventsStreamController.add(ConnectionStateChanged(state: _connectionState));
       notifyListeners();
     });
   }

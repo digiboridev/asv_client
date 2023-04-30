@@ -3,6 +3,11 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 abstract class RoomEvent {}
 
+class ConnectionStateChanged extends RoomEvent {
+  ConnectionStateChanged({required this.state});
+  final RoomConnectionState state;
+}
+
 abstract class PresenceEvent extends RoomEvent {
   PresenceEvent({required this.clientId, required this.time});
   final String clientId;

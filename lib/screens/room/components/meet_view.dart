@@ -50,11 +50,8 @@ class MeetViewBody extends StatelessWidget {
         double squareSize = 0;
 
         if (tilesCount == 1) {
-          if (maxHeight > maxWidth) {
-            squareSize = maxWidth;
-          } else {
-            squareSize = maxHeight;
-          }
+          double lowestSide = maxHeight > maxWidth ? maxWidth : maxHeight;
+          squareSize = lowestSide;
         } else {
           double area = maxHeight * maxWidth;
           double squareArea = area / tilesCount;
@@ -62,25 +59,32 @@ class MeetViewBody extends StatelessWidget {
           squareSize = squareSide * 0.75;
         }
 
-        return Wrap(
-          alignment: WrapAlignment.center,
-          runAlignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            TileWrapper(
-                squareSize: squareSize,
-                child: ClientTile(
-                  meetViewController: _meetViewController,
-                )),
-            ..._meetViewController.peers.map((p) {
-              return TileWrapper(
-                squareSize: squareSize,
-                child: PeerTile(
-                  peer: p,
-                ),
-              );
-            })
-          ],
+        return FittedBox(
+          fit: BoxFit.contain,
+          child: SizedBox(
+            width: maxWidth,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TileWrapper(
+                    squareSize: squareSize,
+                    child: ClientTile(
+                      meetViewController: _meetViewController,
+                    )),
+                ..._meetViewController.peers.map((p) {
+                  return TileWrapper(
+                    key: ValueKey(p.clientId),
+                    squareSize: squareSize,
+                    child: PeerTile(
+                      peer: p,
+                    ),
+                  );
+                })
+              ],
+            ),
+          ),
         );
       },
     );
@@ -141,16 +145,64 @@ class _ClientTileState extends State<ClientTile> {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.amber,
-      child: Builder(builder: (_) {
-        RTCStreamTrack? videoTrack = widget._meetViewController.videoTrack;
-        if (videoTrack != null) {
-          return RTCStreamRenderer(
-            stream: videoTrack.stream,
-            mirror: true,
-          );
-        }
-        return const SizedBox.shrink();
-      }),
+      child: Stack(
+        children: [
+          SizedBox.expand(
+            child: placeholder(),
+          ),
+          Builder(builder: (_) {
+            RTCStreamTrack? videoTrack = widget._meetViewController.videoTrack;
+            if (videoTrack != null) {
+              return RTCStreamRenderer(
+                stream: videoTrack.stream,
+                mirror: true,
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+          overlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget placeholder() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Icon(
+          Icons.person_sharp,
+          size: constraints.maxWidth / 2,
+          color: Colors.white,
+          shadows: [
+            Shadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(2, 2),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget overlay() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'You',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          Spacer(),
+        ],
+      ),
     );
   }
 }
@@ -185,10 +237,12 @@ class _PeerTileState extends State<PeerTile> {
                 ),
                 if (widget.peer.audioStream != null)
                   RTCStreamRenderer(
+                    key: ValueKey(widget.peer.audioStream!.id),
                     stream: widget.peer.audioStream!,
                   ),
                 if (widget.peer.videoStream != null)
                   RTCStreamRenderer(
+                    key: ValueKey(widget.peer.videoStream!.id),
                     stream: widget.peer.videoStream!,
                     fit: fit,
                   ),

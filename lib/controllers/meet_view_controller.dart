@@ -114,6 +114,14 @@ class MeetViewController extends ChangeNotifier {
       peer?.dispose();
       _peers.remove(peer);
     }
+
+    if (event is ConnectionStateChanged && event.state == RoomConnectionState.disconnected) {
+      for (var peer in _peers) {
+        peer.dispose();
+      }
+      _peers.clear();
+    }
+
     notifyListeners();
   }
 
