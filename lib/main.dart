@@ -1,8 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:asv_client/screens/room/room_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -37,7 +40,6 @@ class MainState extends State<Main> {
 
   toRoom() {
     showDialog(context: context, builder: (context) => const RoomIdDialog());
-    // Navigator.of(context).push(MaterialPageRoute(builder: (context) => RoomScreen()));
   }
 
   @override
