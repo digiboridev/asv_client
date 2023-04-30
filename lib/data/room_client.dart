@@ -13,7 +13,6 @@ enum RoomConnectionState {
 enum PcType { tx, rx }
 
 abstract class RoomClient extends ChangeNotifier {
-  connect();
   RoomConnectionState get connectionState;
   String get roomId;
   String get clientId;

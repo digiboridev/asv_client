@@ -39,7 +39,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     _socket = io(
       'https://asv-socket.onrender.com',
       // 'http://localhost:3000',
-      OptionBuilder().enableForceNew().disableAutoConnect().disableReconnection().setTransports(['websocket']).setAuth(
+      OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
         {'token': kRoomSocketToken, 'roomId': roomId, 'clientId': clientId},
       ).build(),
     );
@@ -49,6 +49,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
       if (roomEvent is ClientJoin) _socket.emit('presence_signal', clientId);
+      debugPrint('socket event: $event, data: $data');
     });
 
     _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -58,10 +59,8 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     _socket.on('error', (data) {
       debugPrint('socket error: $data');
       if (_disposed) return;
-      if (_connectionState != RoomConnectionState.connecting) return;
       _connectionState = RoomConnectionState.connectError;
       notifyListeners();
-      _socket.disconnect();
     });
 
     _socket.on('connect', (data) {
@@ -76,18 +75,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       if (_disposed) return;
       _connectionState = RoomConnectionState.disconnected;
       notifyListeners();
-      connect();
     });
-
-    connect();
-  }
-
-  @override
-  connect() async {
-    await Future.microtask(() => null);
-    _connectionState = RoomConnectionState.connecting;
-    notifyListeners();
-    _socket.connect();
   }
 
   @override
