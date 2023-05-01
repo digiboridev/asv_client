@@ -1,7 +1,7 @@
 import 'package:asv_client/app/router/path.dart';
 import 'package:flutter/material.dart';
 
-class AppRouteParser extends RouteInformationParser<AppPath> {
+class RootRouterParser extends RouteInformationParser<AppPath> {
   @override
   Future<AppPath> parseRouteInformation(RouteInformation routeInformation) async {
     final uri = Uri.parse(routeInformation.location!);
@@ -15,11 +15,11 @@ class AppRouteParser extends RouteInformationParser<AppPath> {
   }
 }
 
-class AppRouteDelegate extends RouterDelegate<AppPath> with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppPath> {
+class RootRouterDelegate extends RouterDelegate<AppPath> with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppPath> {
   @override
   final GlobalKey<NavigatorState> navigatorKey;
 
-  AppRouteDelegate() : navigatorKey = GlobalKey<NavigatorState>();
+  RootRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +58,6 @@ class AppRouteDelegate extends RouterDelegate<AppPath> with ChangeNotifier, PopN
 }
 
 class RootRouter {
-  final delegate = AppRouteDelegate();
-  final parser = AppRouteParser();
+  final delegate = RootRouterDelegate();
+  final parser = RootRouterParser();
 }

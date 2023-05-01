@@ -18,13 +18,11 @@ class TheApp extends StatefulWidget {
 }
 
 class _TheAppState extends State<TheApp> {
-  late final AppRouteParser appRouteParser;
-  late final AppRouteDelegate appRouteDelegate;
+  late final RootRouter rootRouter;
 
   @override
   void initState() {
-    appRouteParser = AppRouteParser();
-    appRouteDelegate = AppRouteDelegate();
+    rootRouter = RootRouter();
     super.initState();
   }
 
@@ -34,10 +32,10 @@ class _TheAppState extends State<TheApp> {
       title: 'ASV Client',
       theme: ThemeData(primarySwatch: Colors.pink),
       backButtonDispatcher: RootBackButtonDispatcher(),
-      routeInformationParser: appRouteParser,
-      routerDelegate: appRouteDelegate,
+      routeInformationParser: rootRouter.parser,
+      routerDelegate: rootRouter.delegate,
       builder: (context, child) {
-        return RouterProvider(router: appRouteDelegate, child: child!);
+        return RouterProvider(router: rootRouter.delegate, child: child!);
       },
     );
   }
