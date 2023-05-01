@@ -1,5 +1,6 @@
 import 'dart:math';
-import 'package:asv_client/screens/room/room_screen.dart';
+import 'package:asv_client/ui/router/path.dart';
+import 'package:asv_client/ui/router/provider.dart';
 import 'package:flutter/material.dart';
 
 class RoomIdDialog extends StatefulWidget {
@@ -17,7 +18,7 @@ class _RoomIdDialogState extends State<RoomIdDialog> {
   onJoin() {
     if (formKey.currentState!.validate()) {
       Navigator.of(context).pop();
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) => RoomScreen(roomId: roomId)));
+      RouterProvider.read(context).push(RoomPath(roomId));
     }
   }
 
