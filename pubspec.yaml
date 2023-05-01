@@ -1,7 +1,7 @@
 name: asv_client
 description: ASV Client App.
 publish_to: 'none'
-version: 1.0.50+50
+version: 1.0.51+51
 
 environment:
   sdk: '>=2.19.2 <3.0.0'
