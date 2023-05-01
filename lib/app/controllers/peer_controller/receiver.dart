@@ -1,4 +1,4 @@
-import 'package:asv_client/controllers/peer_controller/connection_state.dart';
+import 'package:asv_client/app/controllers/peer_controller/connection_state.dart';
 import 'package:asv_client/core/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';

@@ -1,4 +1,4 @@
-import 'package:asv_client/ui/router/pages.dart';
+import 'package:asv_client/app/router/pages.dart';
 import 'package:flutter/material.dart';
 
 abstract class AppPath {

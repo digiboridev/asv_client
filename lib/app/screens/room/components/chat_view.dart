@@ -2,7 +2,7 @@
 import 'package:asv_client/data/models/chat_entries.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:asv_client/screens/room/room_screen.dart';
+import 'package:asv_client/app/screens/room/room_screen.dart';
 
 class ChatView extends StatelessWidget {
   const ChatView({super.key});

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:asv_client/controllers/chat_view_controller.dart';
-import 'package:asv_client/controllers/meet_view_controller.dart';
+import 'package:asv_client/app/controllers/chat_view_controller.dart';
+import 'package:asv_client/app/controllers/meet_view_controller.dart';
 import 'package:asv_client/data/transport/room_client.dart';
 import 'package:asv_client/data/transport/room_client_socket_impl.dart';
-import 'package:asv_client/screens/room/components/chat_view.dart';
-import 'package:asv_client/screens/room/components/meet_view.dart';
+import 'package:asv_client/app/screens/room/components/chat_view.dart';
+import 'package:asv_client/app/screens/room/components/meet_view.dart';
 
 class RoomScreen extends StatefulWidget {
   const RoomScreen({Key? key, required this.roomId}) : super(key: key);

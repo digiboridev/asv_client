@@ -1,4 +1,4 @@
-import 'package:asv_client/ui/router/path.dart';
+import 'package:asv_client/app/router/path.dart';
 import 'package:flutter/material.dart';
 
 class AppRouteParser extends RouteInformationParser<AppPath> {

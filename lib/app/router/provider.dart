@@ -1,4 +1,4 @@
-import 'package:asv_client/ui/router/router.dart';
+import 'package:asv_client/app/router/router.dart';
 import 'package:flutter/material.dart';
 
 class RouterProvider extends InheritedNotifier<AppRouteDelegate> {

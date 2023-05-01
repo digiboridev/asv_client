@@ -1,13 +1,13 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
-import 'package:asv_client/controllers/peer_controller/connection_state.dart';
-import 'package:asv_client/screens/room/components/meet_buttons.dart';
-import 'package:asv_client/screens/room/room_screen.dart';
+import 'package:asv_client/app/controllers/peer_controller/connection_state.dart';
+import 'package:asv_client/app/screens/room/components/meet_buttons.dart';
+import 'package:asv_client/app/screens/room/room_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:asv_client/controllers/meet_view_controller.dart';
-import 'package:asv_client/controllers/peer_controller/peer_controller.dart';
-import 'package:asv_client/controllers/peer_controller/rtc_stream_track.dart';
-import 'package:asv_client/widgets/rtc_stream_renderer.dart';
+import 'package:asv_client/app/controllers/meet_view_controller.dart';
+import 'package:asv_client/app/controllers/peer_controller/peer_controller.dart';
+import 'package:asv_client/app/controllers/peer_controller/rtc_stream_track.dart';
+import 'package:asv_client/app/widgets/rtc_stream_renderer.dart';
 import 'package:flutter_fadein/flutter_fadein.dart';
 
 class MeetView extends StatelessWidget {

@@ -1,5 +1,5 @@
-import 'package:asv_client/screens/home/home_screen.dart';
-import 'package:asv_client/screens/room/room_screen.dart';
+import 'package:asv_client/app/screens/home/home_screen.dart';
+import 'package:asv_client/app/screens/room/room_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends Page {

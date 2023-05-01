@@ -1,4 +1,4 @@
-import 'package:asv_client/widgets/room_id_dialog.dart';
+import 'package:asv_client/app/screens/home/components/room_id_dialog.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatelessWidget {
