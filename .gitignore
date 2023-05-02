@@ -31,7 +31,6 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-!/build/web/
 # /build/macos
 
 # Symbolication related
@@ -45,4 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+
+!/build/web/
 .env
+*.g.dart

@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:asv_client/core/env.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:asv_client/data/transport/room_client.dart';
 import 'package:socket_io_client/socket_io_client.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   RoomClientSocketImpl({
@@ -36,8 +36,8 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   Stream<RoomEvent> get eventStream => _eventsStreamController.stream;
 
   init() {
-    String token = dotenv.env['SOCKETTOKEN']!;
-    String url = dotenv.env['SOCKETURL']!;
+    String token = Env.apiKey;
+    String url = Env.apiUrl;
 
     _socket = io(
       url,
