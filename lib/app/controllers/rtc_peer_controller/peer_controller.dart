@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:asv_client/app/controllers/peer_controller/connection_state.dart';
-import 'package:asv_client/app/controllers/peer_controller/receiver.dart';
-import 'package:asv_client/app/controllers/peer_controller/transmitter.dart';
-import 'package:asv_client/app/controllers/peer_controller/rtc_stream_track.dart';
+import 'package:asv_client/app/controllers/rtc_peer_controller/connection_state.dart';
+import 'package:asv_client/app/controllers/rtc_peer_controller/receiver.dart';
+import 'package:asv_client/app/controllers/rtc_peer_controller/transmitter.dart';
+import 'package:asv_client/app/controllers/rtc_peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';

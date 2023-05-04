@@ -1,8 +1,9 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:asv_client/app/providers/chat_view_controller_provider.dart';
+import 'package:asv_client/app/widgets/chat_tiles.dart';
 import 'package:asv_client/data/models/chat_entries.dart';
+import 'package:asv_client/data/models/client.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class ChatView extends StatelessWidget {
   const ChatView({super.key});
@@ -25,63 +26,84 @@ class ChatView extends StatelessWidget {
           const SizedBox(height: 16),
           const Text('Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
-          Visibility(
-            visible: ChatViewControllerProvider.watch(context).typingClients.isNotEmpty,
-            maintainState: true,
-            maintainAnimation: true,
-            maintainSize: true,
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(
-                horizontal: 16,
-              ),
-              child: Text(
-                '${ChatViewControllerProvider.watch(context).typingClients.join(', ')} ${ChatViewControllerProvider.watch(context).typingClients.length > 1 ? 'are' : 'is'} typing...',
-                style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
-                textAlign: TextAlign.start,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-              child: ShaderMask(
-            shaderCallback: (Rect rect) {
-              return const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.purple, Colors.transparent, Colors.transparent, Colors.purple],
-                stops: [0.0, 0.03, 0.95, 1.0],
-              ).createShader(rect);
-            },
-            blendMode: BlendMode.dstOut,
-            child: ListView.separated(
-              reverse: true,
-              physics: BouncingScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 12, top: 12),
-              itemCount: ChatViewControllerProvider.watch(context).chatHistory.length,
-              itemBuilder: (context, index) {
-                final chatEntry = ChatViewControllerProvider.watch(context).chatHistory.reversed.toList()[index];
-
-                if (chatEntry is Message) {
-                  return CLMessageTile(message: chatEntry);
-                }
-
-                if (chatEntry is UserJoined) {
-                  return CLJoinTile(event: chatEntry);
-                }
-
-                if (chatEntry is UserLeft) {
-                  return CLLeaveTile(event: chatEntry);
-                }
-                return const SizedBox();
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-            ),
-          )),
-          MessageField(),
+          const TypingClients(),
+          const Expanded(child: ChatHistory()),
+          const MessageField(),
         ],
       ),
+    );
+  }
+}
+
+class ChatHistory extends StatelessWidget {
+  const ChatHistory({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    List<ChatEntry> chatHistory = ChatViewControllerProvider.watch(context).chatHistory;
+
+    return ShaderMask(
+      shaderCallback: (Rect rect) {
+        return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.purple, Colors.transparent, Colors.transparent, Colors.purple],
+          stops: [0.0, 0.03, 0.95, 1.0],
+        ).createShader(rect);
+      },
+      blendMode: BlendMode.dstOut,
+      child: ListView.separated(
+        reverse: true,
+        physics: BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 12, top: 12),
+        itemCount: chatHistory.length,
+        itemBuilder: (context, index) {
+          final chatEntry = chatHistory.reversed.toList()[index];
+
+          if (chatEntry is Message) {
+            return MessageTile(message: chatEntry);
+          }
+
+          if (chatEntry is UserJoined) {
+            return JoinTile(event: chatEntry);
+          }
+
+          if (chatEntry is UserLeft) {
+            return LeaveTile(event: chatEntry);
+          }
+          return const SizedBox();
+        },
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
+      ),
+    );
+  }
+}
+
+class TypingClients extends StatelessWidget {
+  const TypingClients({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    Set<Client> typingClients = ChatViewControllerProvider.watch(context).typingClients;
+
+    if (typingClients.isEmpty) return const SizedBox();
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(
+            horizontal: 16,
+          ),
+          child: Text(
+            '${typingClients.map((e) => e.name).join(', ')} ${typingClients.length > 1 ? 'are' : 'is'} typing...',
+            style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
+            textAlign: TextAlign.start,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }
@@ -144,128 +166,6 @@ class _MessageFieldState extends State<MessageField> {
           ),
           IconButton(onPressed: sendMessage, icon: const Icon(Icons.send)),
         ],
-      ),
-    );
-  }
-}
-
-class CLMessageTile extends StatefulWidget {
-  const CLMessageTile({super.key, required this.message});
-
-  final Message message;
-
-  @override
-  State<CLMessageTile> createState() => _CLMessageTileState();
-}
-
-class _CLMessageTileState extends State<CLMessageTile> {
-  late final String formattedDate;
-
-  @override
-  void initState() {
-    super.initState();
-    // Prepare date string
-    bool sameDate = DateTime.now().difference(widget.message.time).inDays == 0;
-    if (sameDate) {
-      formattedDate = DateFormat('HH:mm').format(widget.message.time);
-    } else {
-      formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(widget.message.time);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(2, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Flexible(
-                child: Text(
-                  widget.message.userName,
-                  style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w500),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                formattedDate,
-                style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: Text(
-              widget.message.message,
-              textAlign: TextAlign.start,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class CLJoinTile extends StatefulWidget {
-  const CLJoinTile({super.key, required this.event});
-
-  final UserJoined event;
-
-  @override
-  State<CLJoinTile> createState() => _CLJoinTileState();
-}
-
-class _CLJoinTileState extends State<CLJoinTile> {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Text(
-        '${widget.event.userName} joined',
-        style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-}
-
-class CLLeaveTile extends StatefulWidget {
-  const CLLeaveTile({super.key, required this.event});
-
-  final UserLeft event;
-
-  @override
-  State<CLLeaveTile> createState() => _CLLeaveTileState();
-}
-
-class _CLLeaveTileState extends State<CLLeaveTile> {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Text(
-        '${widget.event.userName} left',
-        style: TextStyle(color: Colors.blueGrey[400], fontSize: 12),
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
       ),
     );
   }

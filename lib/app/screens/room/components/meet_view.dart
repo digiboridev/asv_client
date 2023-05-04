@@ -1,47 +1,39 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
-import 'package:asv_client/app/controllers/peer_controller/connection_state.dart';
+import 'package:asv_client/app/controllers/rtc_peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/app/providers/meet_view_controller_provider.dart';
-import 'package:asv_client/app/screens/room/components/meet_buttons.dart';
+import 'package:asv_client/app/widgets/meet_button.dart';
+import 'package:asv_client/app/widgets/meet_tiles.dart';
 import 'package:flutter/material.dart';
 import 'package:asv_client/app/controllers/meet_view_controller.dart';
-import 'package:asv_client/app/controllers/peer_controller/peer_controller.dart';
-import 'package:asv_client/app/controllers/peer_controller/rtc_stream_track.dart';
-import 'package:asv_client/app/widgets/rtc_stream_renderer.dart';
-import 'package:flutter_fadein/flutter_fadein.dart';
 
 class MeetView extends StatelessWidget {
   const MeetView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    MeetViewController meetViewController = MeetViewControllerProvider.watch(context);
     return Container(
       color: Colors.grey.shade100,
       child: Column(
         children: [
-          SizedBox(height: 16),
-          Expanded(child: MeetViewBody(meetViewController: meetViewController)),
-          SizedBox(height: 16),
-          MeetButtons(meetViewController: meetViewController),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
+          const Expanded(child: MeetArea()),
+          const SizedBox(height: 16),
+          const Controls(),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 }
 
-class MeetViewBody extends StatelessWidget {
-  const MeetViewBody({
-    super.key,
-    required MeetViewController meetViewController,
-  }) : _meetViewController = meetViewController;
-
-  final MeetViewController _meetViewController;
+class MeetArea extends StatelessWidget {
+  const MeetArea({super.key});
 
   @override
   Widget build(BuildContext context) {
-    int tilesCount = _meetViewController.peers.length + 1;
+    MeetViewController meetViewController = MeetViewControllerProvider.watch(context);
+    int tilesCount = meetViewController.peers.length + 1;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -71,9 +63,9 @@ class MeetViewBody extends StatelessWidget {
                 TileWrapper(
                     squareSize: squareSize,
                     child: ClientTile(
-                      meetViewController: _meetViewController,
+                      meetViewController: meetViewController,
                     )),
-                ..._meetViewController.peers.map((p) {
+                ...meetViewController.peers.map((p) {
                   return TileWrapper(
                     key: ValueKey(p.memberId),
                     squareSize: squareSize,
@@ -91,257 +83,79 @@ class MeetViewBody extends StatelessWidget {
   }
 }
 
-class TileWrapper extends StatelessWidget {
-  const TileWrapper({
-    super.key,
-    required this.squareSize,
-    required this.child,
-  });
-
-  final double squareSize;
-  final Widget child;
+class Controls extends StatefulWidget {
+  const Controls({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return FadeIn(
-      child: AnimatedContainer(
-        width: squareSize,
-        height: squareSize,
-        duration: const Duration(milliseconds: 300),
-        margin: EdgeInsets.all(8),
-        clipBehavior: Clip.antiAlias,
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: Colors.grey,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 16,
-              offset: const Offset(4, 4),
-            ),
-          ],
-        ),
-        child: child,
-      ),
-    );
-  }
+  State<Controls> createState() => _ControlsState();
 }
 
-class ClientTile extends StatefulWidget {
-  const ClientTile({
-    super.key,
-    required MeetViewController meetViewController,
-  }) : _meetViewController = meetViewController;
+class _ControlsState extends State<Controls> {
+  bool busy = false;
 
-  final MeetViewController _meetViewController;
+  MeetViewController get meetViewController => MeetViewControllerProvider.read(context);
 
-  @override
-  State<ClientTile> createState() => _ClientTileState();
-}
-
-class _ClientTileState extends State<ClientTile> {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.amber,
-      child: Stack(
-        children: [
-          SizedBox.expand(
-            child: placeholder(),
-          ),
-          Builder(builder: (_) {
-            RTCStreamTrack? videoTrack = widget._meetViewController.videoTrack;
-            if (videoTrack != null) {
-              return RTCStreamRenderer(
-                stream: videoTrack.stream,
-                mirror: true,
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          overlay(),
-        ],
-      ),
-    );
-  }
-
-  Widget placeholder() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Icon(
-          Icons.person_sharp,
-          size: constraints.maxWidth / 2,
-          color: Colors.white,
-          shadows: [
-            Shadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(2, 2),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget overlay() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'You',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-class PeerTile extends StatefulWidget {
-  const PeerTile({
-    required this.peer,
-    super.key,
-  });
-
-  final RTCPeerController peer;
-
-  @override
-  State<PeerTile> createState() => _PeerTileState();
-}
-
-class _PeerTileState extends State<PeerTile> {
-  Fit fit = Fit.contain;
-  bool muted = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-        color: Colors.pink,
-        child: AnimatedBuilder(
-          animation: widget.peer,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                SizedBox.expand(
-                  child: placeholder(),
-                ),
-                if (widget.peer.audioStream != null)
-                  RTCStreamRenderer(
-                    key: ValueKey(widget.peer.audioStream!.id),
-                    stream: widget.peer.audioStream!,
-                  ),
-                if (widget.peer.videoStream != null)
-                  RTCStreamRenderer(
-                    key: ValueKey(widget.peer.videoStream!.id),
-                    stream: widget.peer.videoStream!,
-                    fit: fit,
-                  ),
-                overlay(),
-              ],
-            );
-          },
-        ));
-  }
-
-  Color signalColor(RTCConnectionState state) {
-    switch (state) {
-      case RTCConnectionState.connecting:
-        return Colors.blue;
-      case RTCConnectionState.connected:
-        return Colors.yellow;
-      case RTCConnectionState.failed:
-        return Colors.red;
-
-      default:
-        return Colors.grey;
+  enableAudio() async {
+    if (busy) return;
+    setState(() => busy = true);
+    try {
+      await meetViewController.enableAudio();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      debugPrint(e.toString());
     }
+    setState(() => busy = false);
   }
 
-  toggleFit() {
-    setState(() {
-      if (fit == Fit.contain) {
-        fit = Fit.cover;
-      } else {
-        fit = Fit.contain;
-      }
-    });
+  enableCamera() async {
+    if (busy) return;
+
+    setState(() => busy = true);
+    try {
+      await meetViewController.enableCamera();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      debugPrint(e.toString());
+    }
+    setState(() => busy = false);
   }
 
-  toggleAudio() {
-    setState(() {
-      muted = !muted;
-    });
+  enableDisplay() async {
+    if (busy) return;
+
+    setState(() => busy = true);
+    try {
+      await meetViewController.enableDisplay();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      debugPrint(e.toString());
+    }
+    setState(() => busy = false);
   }
 
-  Widget overlay() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.peer.memberId,
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-              ),
-              if (widget.peer.videoStream != null)
-                Tooltip(
-                  message: 'Toggle video fit',
-                  child: GestureDetector(
-                    onTap: toggleFit,
-                    child: Icon(
-                      Icons.fit_screen,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          Spacer(),
-          Row(
-            children: [
-              if (widget.peer.audioStream != null) Icon(Icons.mic_outlined, color: Colors.white),
-              SizedBox(width: 8),
-              if (widget.peer.videoStream != null) Icon(Icons.videocam_outlined, color: Colors.white),
-              Spacer(),
-              Icon(Icons.circle, size: 8, color: signalColor(widget.peer.txConnectionState)),
-              SizedBox(width: 4),
-              Icon(Icons.circle, size: 8, color: signalColor(widget.peer.rxConnectionState)),
-            ],
-          )
-        ],
-      ),
-    );
-  }
+  disableAudio() => meetViewController.disableAudio();
+  disableVideo() => meetViewController.disableVideo();
 
-  Widget placeholder() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Icon(
-          Icons.person_sharp,
-          size: constraints.maxWidth / 2,
-          color: Colors.white,
-          shadows: [
-            Shadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(2, 2),
-            ),
-          ],
-        );
-      },
+  bool get audioEnabled => meetViewController.audioTrack != null;
+  bool get cameraEnabled => meetViewController.videoTrack != null && meetViewController.videoTrack!.kind == RTCTrackKind.camera;
+  bool get displayEnabled => meetViewController.videoTrack != null && meetViewController.videoTrack!.kind == RTCTrackKind.display;
+
+  @override
+  Widget build(BuildContext context) {
+    MeetViewControllerProvider.watch(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (audioEnabled) MeetButton(icon: Icon(Icons.mic_outlined), onPressed: disableAudio, tooltip: 'Disable audio'),
+        if (!audioEnabled) MeetButton(icon: Icon(Icons.mic_off_outlined), onPressed: enableAudio, tooltip: 'Enable audio'),
+        SizedBox(width: 32),
+        if (cameraEnabled) MeetButton(icon: Icon(Icons.videocam_outlined), onPressed: disableVideo, tooltip: 'Disable camera'),
+        if (!cameraEnabled) MeetButton(icon: Icon(Icons.videocam_off_outlined), onPressed: enableCamera, tooltip: 'Enable camera'),
+        SizedBox(width: 32),
+        if (displayEnabled) MeetButton(icon: Icon(Icons.screen_share_outlined), onPressed: disableVideo, tooltip: 'Disable display'),
+        if (!displayEnabled) MeetButton(icon: Icon(Icons.stop_screen_share_outlined), onPressed: enableDisplay, tooltip: 'Enable display'),
+      ],
     );
   }
 }

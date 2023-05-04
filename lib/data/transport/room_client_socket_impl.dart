@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:asv_client/core/env.dart';
+import 'package:asv_client/data/models/client.dart';
+import 'package:asv_client/data/repositories/client_repository.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -9,13 +11,17 @@ import 'package:socket_io_client/socket_io_client.dart';
 class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   RoomClientSocketImpl({
     required String roomId,
-  }) : _roomId = roomId {
+    required ClientRepository clientRepository,
+  })  : _roomId = roomId,
+        _clientRepository = clientRepository {
     init();
   }
 
   final String _roomId;
+  final ClientRepository _clientRepository;
   late final Socket _socket;
   late final Timer _signalTimer;
+
   bool _disposed = false;
 
   @override
@@ -31,9 +37,10 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   @override
   Stream<RoomEvent> get eventStream => _eventsStreamController.stream;
 
-  init() {
+  init() async {
     String apiKey = Env.apiKey;
     String url = Env.apiUrlDev;
+    Client client = await _clientRepository.getClient();
 
     _socket = io(
       url,
@@ -41,7 +48,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
         {
           'apiKey': apiKey,
           'roomId': roomId,
-          // 'clientId': clientId,
+          'client': client.toMap(),
         },
       ).build(),
     );
@@ -92,11 +99,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   }
 
   @override
-  Future sendMessage(String message) async => _socket.emit('msg', {
-        'text': message,
-        'memberId': _socket.id,
-        'time': DateTime.now().millisecondsSinceEpoch,
-      });
+  Future sendMessage(String message) async => _socket.emit('msg', message);
 
   @override
   Future sendTyping() async => _socket.emit('typing', _socket.id);
@@ -168,32 +171,35 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
     switch (event) {
       case 'presence_join':
         return ClientJoin(
+          client: Client.fromMap(data['client']),
           memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'presence_leave':
         return ClientLeave(
+          client: Client.fromMap(data['client']),
           memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'presence_signal':
         return ClientSignal(
+          client: Client.fromMap(data['client']),
           memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'msg':
         return NewMessage(
-          message: data['text'],
-          memberId: data['memberId'],
+          client: Client.fromMap(data['client']),
+          message: data['message'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'typing':
         return ClientTyping(
-          memberId: data['memberId'],
+          client: Client.fromMap(data['client']),
         );
       case 'typing_cancel':
         return ClientTypingCancel(
-          memberId: data['memberId'],
+          client: Client.fromMap(data['client']),
         );
       case 'rtc_warmup_ack':
         var d = data as List;
