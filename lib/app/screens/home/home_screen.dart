@@ -18,7 +18,7 @@ class Home extends StatelessWidget {
             ElevatedButton(onPressed: () => toRoom(context), child: const Text('To Room')),
             Spacer(),
             Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.end, children: [
-              Padding(padding: const EdgeInsets.all(8.0), child: const Text('1.0.51')),
+              Padding(padding: const EdgeInsets.all(8.0), child: const Text('1.0.52')),
             ]),
           ],
         ),
