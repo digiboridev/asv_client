@@ -39,7 +39,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
 
   init() async {
     String apiKey = Env.apiKey;
-    String url = Env.apiUrlDev;
+    String url = Env.apiUrl;
     Client client = await _clientRepository.getClient();
 
     _socket = io(
