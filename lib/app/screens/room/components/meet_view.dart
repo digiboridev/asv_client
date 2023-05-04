@@ -1,8 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:math';
 import 'package:asv_client/app/controllers/peer_controller/connection_state.dart';
+import 'package:asv_client/app/providers/meet_view_controller_provider.dart';
 import 'package:asv_client/app/screens/room/components/meet_buttons.dart';
-import 'package:asv_client/app/screens/room/room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:asv_client/app/controllers/meet_view_controller.dart';
 import 'package:asv_client/app/controllers/peer_controller/peer_controller.dart';
@@ -75,7 +75,7 @@ class MeetViewBody extends StatelessWidget {
                     )),
                 ..._meetViewController.peers.map((p) {
                   return TileWrapper(
-                    key: ValueKey(p.clientId),
+                    key: ValueKey(p.memberId),
                     squareSize: squareSize,
                     child: PeerTile(
                       peer: p,
@@ -292,7 +292,7 @@ class _PeerTileState extends State<PeerTile> {
             children: [
               Expanded(
                 child: Text(
-                  widget.peer.clientId,
+                  widget.peer.memberId,
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),

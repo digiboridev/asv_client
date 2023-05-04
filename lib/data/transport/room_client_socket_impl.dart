@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:asv_client/core/env.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:flutter/foundation.dart';
@@ -14,16 +13,13 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     init();
   }
 
+  final String _roomId;
   late final Socket _socket;
   late final Timer _signalTimer;
-  final String _roomId;
-  final String _clientId = Random().nextInt(1000000).toString();
   bool _disposed = false;
 
   @override
   String get roomId => _roomId;
-  @override
-  String get clientId => _clientId;
 
   // Connection status section
   RoomConnectionState _connectionState = RoomConnectionState.connecting;
@@ -36,13 +32,17 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   Stream<RoomEvent> get eventStream => _eventsStreamController.stream;
 
   init() {
-    String token = Env.apiKey;
-    String url = Env.apiUrl;
+    String apiKey = Env.apiKey;
+    String url = Env.apiUrlDev;
 
     _socket = io(
       url,
       OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
-        {'token': token, 'roomId': roomId, 'clientId': clientId},
+        {
+          'apiKey': apiKey,
+          'roomId': roomId,
+          // 'clientId': clientId,
+        },
       ).build(),
     );
 
@@ -50,11 +50,11 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       if (_disposed) return;
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
-      if (roomEvent is ClientJoin) _socket.emit('presence_signal', clientId);
+      if (roomEvent is ClientJoin) _socket.emit('presence_signal', _socket.id);
     });
 
     _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _socket.emit('presence_signal', clientId);
+      _socket.emit('presence_signal', _socket.id);
     });
 
     _socket.on('error', (data) {
@@ -66,7 +66,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     });
 
     _socket.on('connect', (data) {
-      debugPrint('socket connect');
+      debugPrint('socket connect: ${_socket.id}');
       if (_disposed) return;
       _connectionState = RoomConnectionState.connected;
       _eventsStreamController.add(ConnectionStateChanged(state: _connectionState));
@@ -94,27 +94,29 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   @override
   Future sendMessage(String message) async => _socket.emit('msg', {
         'text': message,
-        'clientId': clientId,
+        'memberId': _socket.id,
         'time': DateTime.now().millisecondsSinceEpoch,
       });
 
   @override
-  Future sendTyping() async => _socket.emit('typing', clientId);
+  Future sendTyping() async => _socket.emit('typing', _socket.id);
 
   @override
-  Future sendTypingCancel() async => _socket.emit('typing_cancel', clientId);
+  Future sendTypingCancel() async => _socket.emit('typing_cancel', _socket.id);
 
   // RTC section
   @override
-  Future<String> sendWarmupAck(String toClientId) async {
+  Future<String> sendWarmupAck({
+    required String memberId,
+  }) async {
     final c = Completer<String>();
     Timer(const Duration(seconds: 2), () {
       if (!c.isCompleted) c.complete('timeout');
     });
 
     _socket.emitWithAck('rtc_warmup_ack', {
-      'from': clientId,
-      'to': toClientId,
+      'from': _socket.id,
+      'to': memberId,
     }, ack: (String data) {
       if (!c.isCompleted) c.complete(data);
     });
@@ -123,28 +125,38 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
   }
 
   @override
-  Future sendOffer(String toClientId, RTCSessionDescription offer) async {
+  Future sendOffer({
+    required String memberId,
+    required RTCSessionDescription offer,
+  }) async {
     _socket.emit('rtc_offer', {
-      'from': clientId,
-      'to': toClientId,
+      'from': _socket.id,
+      'to': memberId,
       'offer': offer.toMap(),
     });
   }
 
   @override
-  Future sendAnswer(String toClientId, RTCSessionDescription answer) async {
+  Future sendAnswer({
+    required String memberId,
+    required RTCSessionDescription answer,
+  }) async {
     _socket.emit('rtc_answer', {
-      'from': clientId,
-      'to': toClientId,
+      'from': _socket.id,
+      'to': memberId,
       'answer': answer.toMap(),
     });
   }
 
   @override
-  Future sendCandidate(String toClientId, PcType pcType, RTCIceCandidate candidate) async {
+  Future sendCandidate({
+    required String memberId,
+    required PcType pcType,
+    required RTCIceCandidate candidate,
+  }) async {
     _socket.emit('rtc_candidate', {
-      'from': clientId,
-      'to': toClientId,
+      'from': _socket.id,
+      'to': memberId,
       'pc_type': pcType.name,
       'candidate': candidate.toMap(),
     });
@@ -156,42 +168,42 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
     switch (event) {
       case 'presence_join':
         return ClientJoin(
-          clientId: data['clientId'],
+          memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'presence_leave':
         return ClientLeave(
-          clientId: data['clientId'],
+          memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'presence_signal':
         return ClientSignal(
-          clientId: data['clientId'],
+          memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'msg':
         return NewMessage(
           message: data['text'],
-          clientId: data['clientId'],
+          memberId: data['memberId'],
           time: DateTime.fromMillisecondsSinceEpoch(data['time']),
         );
       case 'typing':
         return ClientTyping(
-          clientId: data['clientId'],
+          memberId: data['memberId'],
         );
       case 'typing_cancel':
         return ClientTypingCancel(
-          clientId: data['clientId'],
+          memberId: data['memberId'],
         );
       case 'rtc_warmup_ack':
         var d = data as List;
         return RTCWarmup(
-          clientId: d.first['from'],
+          memberId: d.first['from'],
           callback: d.last,
         );
       case 'rtc_offer':
         return RTCOffer(
-          clientId: data['from'],
+          memberId: data['from'],
           offer: RTCSessionDescription(
             data['offer']['sdp'],
             data['offer']['type'],
@@ -199,7 +211,7 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
         );
       case 'rtc_answer':
         return RTCAnswer(
-          clientId: data['from'],
+          memberId: data['from'],
           answer: RTCSessionDescription(
             data['answer']['sdp'],
             data['answer']['type'],
@@ -207,7 +219,7 @@ RoomEvent? _eventParser({required String event, required dynamic data}) {
         );
       case 'rtc_candidate':
         return RTCCandidate(
-          clientId: data['from'],
+          memberId: data['from'],
           pcType: PcType.values.byName(data['pc_type']),
           candidate: RTCIceCandidate(
             data['candidate']['candidate'],

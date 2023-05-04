@@ -20,25 +20,25 @@ class ChatViewController extends ChangeNotifier {
 
   roomEventsHandler(RoomEvent event) {
     if (event is NewMessage) {
-      chatHistory.add(ChatEntry.message(event.clientId, event.message));
-      if (typingClients.contains(event.clientId)) typingClients.remove(event.clientId);
+      chatHistory.add(ChatEntry.message(event.memberId, event.message));
+      if (typingClients.contains(event.memberId)) typingClients.remove(event.memberId);
     }
 
     if (event is ClientJoin) {
-      chatHistory.add(ChatEntry.userJoined(event.clientId));
+      chatHistory.add(ChatEntry.userJoined(event.memberId));
     }
 
     if (event is ClientLeave) {
-      chatHistory.add(ChatEntry.userLeft(event.clientId));
-      if (typingClients.contains(event.clientId)) typingClients.remove(event.clientId);
+      chatHistory.add(ChatEntry.userLeft(event.memberId));
+      if (typingClients.contains(event.memberId)) typingClients.remove(event.memberId);
     }
 
     if (event is ClientTyping) {
-      typingClients.add(event.clientId);
+      typingClients.add(event.memberId);
     }
 
-    if (event is ClientTypingCancel && typingClients.contains(event.clientId)) {
-      typingClients.remove(event.clientId);
+    if (event is ClientTypingCancel && typingClients.contains(event.memberId)) {
+      typingClients.remove(event.memberId);
     }
 
     notifyListeners();

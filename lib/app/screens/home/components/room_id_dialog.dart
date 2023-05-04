@@ -1,7 +1,6 @@
-
 import 'dart:math';
 import 'package:asv_client/app/router/path.dart';
-import 'package:asv_client/app/router/provider.dart';
+import 'package:asv_client/app/providers/root_router_provider.dart';
 import 'package:flutter/material.dart';
 
 class RoomIdDialog extends StatefulWidget {

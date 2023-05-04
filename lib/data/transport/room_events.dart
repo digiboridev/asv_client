@@ -9,64 +9,64 @@ class ConnectionStateChanged extends RoomEvent {
 }
 
 abstract class PresenceEvent extends RoomEvent {
-  PresenceEvent({required this.clientId, required this.time});
-  final String clientId;
+  PresenceEvent({required this.memberId, required this.time});
+  final String memberId;
   final DateTime time;
 }
 
 class ClientJoin extends PresenceEvent {
-  ClientJoin({required super.clientId, required super.time});
+  ClientJoin({required super.memberId, required super.time});
 }
 
 class ClientLeave extends PresenceEvent {
-  ClientLeave({required super.clientId, required super.time});
+  ClientLeave({required super.memberId, required super.time});
 }
 
 class ClientSignal extends PresenceEvent {
-  ClientSignal({required super.clientId, required super.time});
+  ClientSignal({required super.memberId, required super.time});
 }
 
 abstract class ChatEvent extends RoomEvent {
-  ChatEvent({required this.clientId});
-  final String clientId;
+  ChatEvent({required this.memberId});
+  final String memberId;
 }
 
 class NewMessage extends ChatEvent {
-  NewMessage({required this.message, required super.clientId, required this.time});
+  NewMessage({required this.message, required super.memberId, required this.time});
   final String message;
   final DateTime time;
 }
 
 class ClientTyping extends ChatEvent {
-  ClientTyping({required super.clientId});
+  ClientTyping({required super.memberId});
 }
 
 class ClientTypingCancel extends ChatEvent {
-  ClientTypingCancel({required super.clientId});
+  ClientTypingCancel({required super.memberId});
 }
 
 abstract class RTCEvent extends RoomEvent {
-  RTCEvent({required this.clientId});
-  final String clientId;
+  RTCEvent({required this.memberId});
+  final String memberId;
 }
 
 class RTCWarmup extends RTCEvent {
-  RTCWarmup({required super.clientId, required this.callback});
+  RTCWarmup({required super.memberId, required this.callback});
   final Function(String) callback;
 }
 
 class RTCOffer extends RTCEvent {
-  RTCOffer({required super.clientId, required this.offer});
+  RTCOffer({required super.memberId, required this.offer});
   final RTCSessionDescription offer;
 }
 
 class RTCAnswer extends RTCEvent {
-  RTCAnswer({required super.clientId, required this.answer});
+  RTCAnswer({required super.memberId, required this.answer});
   final RTCSessionDescription answer;
 }
 
 class RTCCandidate extends RTCEvent {
-  RTCCandidate({required super.clientId, required this.pcType, required this.candidate});
+  RTCCandidate({required super.memberId, required this.pcType, required this.candidate});
   final PcType pcType;
   final RTCIceCandidate candidate;
 }

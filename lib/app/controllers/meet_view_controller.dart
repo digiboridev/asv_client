@@ -88,10 +88,10 @@ class MeetViewController extends ChangeNotifier {
 
   roomEventHandler(RoomEvent event) {
     if (event is ClientJoin) {
-      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.clientId == event.clientId);
+      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       if (peer != null) return;
       _peers.add(RTCPeerController(
-        clientId: event.clientId,
+        memberId: event.memberId,
         roomClient: _roomClient,
         audioTrack: _audioTrack,
         videoTrack: _videoTrack,
@@ -99,10 +99,10 @@ class MeetViewController extends ChangeNotifier {
     }
 
     if (event is ClientSignal) {
-      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.clientId == event.clientId);
+      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       if (peer != null) return;
       _peers.add(RTCPeerController(
-        clientId: event.clientId,
+        memberId: event.memberId,
         roomClient: _roomClient,
         audioTrack: _audioTrack,
         videoTrack: _videoTrack,
@@ -110,7 +110,7 @@ class MeetViewController extends ChangeNotifier {
     }
 
     if (event is ClientLeave) {
-      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.clientId == event.clientId);
+      RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       peer?.dispose();
       _peers.remove(peer);
     }

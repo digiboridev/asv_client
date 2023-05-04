@@ -10,7 +10,7 @@ import 'package:asv_client/data/transport/room_client.dart';
 
 class RTCPeerController extends ChangeNotifier {
   RTCPeerController({
-    required this.clientId,
+    required this.memberId,
     required this.roomClient,
     RTCStreamTrack? audioTrack,
     RTCStreamTrack? videoTrack,
@@ -33,7 +33,7 @@ class RTCPeerController extends ChangeNotifier {
     );
   }
 
-  final String clientId;
+  final String memberId;
   final RoomClient roomClient;
   late final Transmitter _transmitter;
   late final Receiver _receiver;
@@ -48,25 +48,25 @@ class RTCPeerController extends ChangeNotifier {
   Future setAudioTrack(RTCStreamTrack? track) => _transmitter.setAudioTrack(track);
   Future setVideoTrack(RTCStreamTrack? track) => _transmitter.setVideoTrack(track);
 
-  Future<String> _sendWarmup() => roomClient.sendWarmupAck(clientId);
-  Future _sendOffer(RTCSessionDescription offer) => roomClient.sendOffer(clientId, offer);
-  Future _sendAnswer(RTCSessionDescription answer) => roomClient.sendAnswer(clientId, answer);
-  Future _sendIceCandy(RTCIceCandidate candidate, PcType pctype) => roomClient.sendCandidate(clientId, pctype, candidate);
+  Future<String> _sendWarmup() => roomClient.sendWarmupAck(memberId: memberId);
+  Future _sendOffer(RTCSessionDescription offer) => roomClient.sendOffer(memberId: memberId, offer: offer);
+  Future _sendAnswer(RTCSessionDescription answer) => roomClient.sendAnswer(memberId: memberId, answer: answer);
+  Future _sendIceCandy(RTCIceCandidate candidate, PcType pctype) => roomClient.sendCandidate(memberId: memberId, pcType: pctype, candidate: candidate);
 
   _eventHandler(RoomEvent event) async {
-    if (event is RTCWarmup && event.clientId == clientId) {
+    if (event is RTCWarmup && event.memberId == memberId) {
       event.callback('ready');
     }
 
-    if (event is RTCOffer && event.clientId == clientId) {
+    if (event is RTCOffer && event.memberId == memberId) {
       _receiver.answer(event.offer);
     }
 
-    if (event is RTCAnswer && event.clientId == clientId) {
+    if (event is RTCAnswer && event.memberId == memberId) {
       _transmitter.setRemoteDescription(event.answer);
     }
 
-    if (event is RTCCandidate && event.clientId == clientId) {
+    if (event is RTCCandidate && event.memberId == memberId) {
       // Pay attention to the pcType here
       // RX candidate is for TX pc and vice versa
       if (event.pcType == PcType.tx) {

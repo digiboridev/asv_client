@@ -1,8 +1,14 @@
 import 'dart:convert';
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 
 class Client extends Equatable {
-  const Client({required this.clientId, required this.name});
+  const Client._({required this.clientId, required this.name});
+
+  /// Creates a new client with a unique id and the base name
+  factory Client.empty() {
+    return Client._(clientId: Uuid().v4(), name: 'Anonimous');
+  }
 
   final String clientId;
   final String name;
@@ -11,7 +17,7 @@ class Client extends Equatable {
     String? clientId,
     String? name,
   }) {
-    return Client(
+    return Client._(
       clientId: clientId ?? this.clientId,
       name: name ?? this.name,
     );
@@ -25,7 +31,7 @@ class Client extends Equatable {
   }
 
   factory Client.fromMap(Map<String, dynamic> map) {
-    return Client(
+    return Client._(
       clientId: map['clientId'] as String,
       name: map['name'] as String,
     );

@@ -15,13 +15,12 @@ enum PcType { tx, rx }
 abstract class RoomClient extends ChangeNotifier {
   RoomConnectionState get connectionState;
   String get roomId;
-  String get clientId;
   Stream<RoomEvent> get eventStream;
   Future sendMessage(String message);
   Future sendTyping();
   Future sendTypingCancel();
-  Future<String> sendWarmupAck(String toClientId);
-  Future sendOffer(String toClientId, RTCSessionDescription offer);
-  Future sendAnswer(String toClientId, RTCSessionDescription answer);
-  Future sendCandidate(String toClientId, PcType pcType, RTCIceCandidate candidate);
+  Future<String> sendWarmupAck({required String memberId});
+  Future sendOffer({required String memberId, required RTCSessionDescription offer});
+  Future sendAnswer({required String memberId, required RTCSessionDescription answer});
+  Future sendCandidate({required String memberId, required PcType pcType, required RTCIceCandidate candidate});
 }

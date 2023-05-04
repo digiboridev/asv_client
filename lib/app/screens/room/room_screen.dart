@@ -1,8 +1,10 @@
+import 'package:asv_client/app/providers/chat_view_controller_provider.dart';
+import 'package:asv_client/app/providers/meet_view_controller_provider.dart';
+import 'package:asv_client/core/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:asv_client/app/controllers/chat_view_controller.dart';
 import 'package:asv_client/app/controllers/meet_view_controller.dart';
 import 'package:asv_client/data/transport/room_client.dart';
-import 'package:asv_client/data/transport/room_client_socket_impl.dart';
 import 'package:asv_client/app/screens/room/components/chat_view.dart';
 import 'package:asv_client/app/screens/room/components/meet_view.dart';
 
@@ -23,7 +25,7 @@ class _RoomScreenState extends State<RoomScreen> {
   @override
   void initState() {
     super.initState();
-    roomClient = RoomClientSocketImpl(roomId: widget.roomId);
+    roomClient = ServiceLocator.createRoomClient(widget.roomId);
     chatViewController = ChatViewController(roomClient: roomClient);
     meetViewController = MeetViewController(roomClient: roomClient);
   }
@@ -180,29 +182,5 @@ class _RoomScreenState extends State<RoomScreen> {
             return SizedBox();
           }),
     );
-  }
-}
-
-class ChatViewControllerProvider extends InheritedNotifier<ChatViewController> {
-  const ChatViewControllerProvider({super.key, required super.child, super.notifier});
-
-  static ChatViewController watch(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<ChatViewControllerProvider>()!.notifier!;
-  }
-
-  static ChatViewController read(BuildContext context) {
-    return context.findAncestorWidgetOfExactType<ChatViewControllerProvider>()!.notifier!;
-  }
-}
-
-class MeetViewControllerProvider extends InheritedNotifier<MeetViewController> {
-  const MeetViewControllerProvider({super.key, required super.child, super.notifier});
-
-  static MeetViewController watch(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<MeetViewControllerProvider>()!.notifier!;
-  }
-
-  static MeetViewController read(BuildContext context) {
-    return context.findAncestorWidgetOfExactType<MeetViewControllerProvider>()!.notifier!;
   }
 }
