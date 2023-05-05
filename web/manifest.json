@@ -1,11 +1,11 @@
 {
-    "name": "asv_client",
-    "short_name": "asv_client",
+    "name": "ASV Client",
+    "short_name": "ASV Client",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Free chat and video calls",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
