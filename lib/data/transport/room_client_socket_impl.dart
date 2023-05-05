@@ -14,30 +14,73 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     required ClientRepository clientRepository,
   })  : _roomId = roomId,
         _clientRepository = clientRepository {
-    init();
+    _init();
   }
 
   final String _roomId;
   final ClientRepository _clientRepository;
+  final _eventsStreamController = StreamController<RoomEvent>.broadcast();
   late final Socket _socket;
   late final Timer _signalTimer;
-
+  RoomConnectionState _connectionState = RoomConnectionState.connecting;
   bool _disposed = false;
 
   @override
-  String get roomId => _roomId;
-
-  // Connection status section
-  RoomConnectionState _connectionState = RoomConnectionState.connecting;
-  @override
   RoomConnectionState get connectionState => _connectionState;
-  // End of connection status section
 
-  final _eventsStreamController = StreamController<RoomEvent>.broadcast();
   @override
   Stream<RoomEvent> get eventStream => _eventsStreamController.stream;
 
-  init() async {
+  //
+  // Chat Actions
+  @override
+  Future sendMessage(String message) async => _socket.emit('msg', message);
+
+  @override
+  Future sendTyping() async => _socket.emit('typing', _socket.id);
+
+  @override
+  Future sendTypingCancel() async => _socket.emit('typing_cancel', _socket.id);
+  // End Chat Actions
+  //
+
+  //
+  // RTC Actions
+  @override
+  Future<String> sendWarmupAck({required String memberId}) async {
+    final c = Completer<String>();
+    Timer(const Duration(seconds: 2), () {
+      if (!c.isCompleted) c.complete('timeout');
+    });
+
+    _socket.emitWithAck('rtc_warmup_ack', {
+      'from': _socket.id,
+      'to': memberId,
+    }, ack: (String data) {
+      if (!c.isCompleted) c.complete(data);
+    });
+
+    return c.future;
+  }
+
+  @override
+  Future sendOffer({required String memberId, required RTCSessionDescription offer}) async {
+    _socket.emit('rtc_offer', {'from': _socket.id, 'to': memberId, 'offer': offer.toMap()});
+  }
+
+  @override
+  Future sendAnswer({required String memberId, required RTCSessionDescription answer}) async {
+    _socket.emit('rtc_answer', {'from': _socket.id, 'to': memberId, 'answer': answer.toMap()});
+  }
+
+  @override
+  Future sendCandidate({required String memberId, required PcType pcType, required RTCIceCandidate candidate}) async {
+    _socket.emit('rtc_candidate', {'from': _socket.id, 'to': memberId, 'pc_type': pcType.name, 'candidate': candidate.toMap()});
+  }
+  // End RTC Actions
+  //
+
+  _init() async {
     String apiKey = Env.apiKey;
     String url = Env.apiUrl;
     Client client = await _clientRepository.getClient();
@@ -47,7 +90,7 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       OptionBuilder().enableForceNew().setTransports(['websocket']).setAuth(
         {
           'apiKey': apiKey,
-          'roomId': roomId,
+          'roomId': _roomId,
           'client': client.toMap(),
         },
       ).build(),
@@ -58,10 +101,6 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       RoomEvent? roomEvent = _eventParser(event: event, data: data);
       if (roomEvent != null) _eventsStreamController.add(roomEvent);
       if (roomEvent is ClientJoin) _socket.emit('presence_signal', _socket.id);
-    });
-
-    _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      _socket.emit('presence_signal', _socket.id);
     });
 
     _socket.on('error', (data) {
@@ -87,6 +126,12 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
       _eventsStreamController.add(ConnectionStateChanged(state: _connectionState));
       notifyListeners();
     });
+
+    // start presence signal sender
+    // send signal every 5 seconds to keep connection alive and notify members that client is still online
+    _signalTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _socket.emit('presence_signal', _socket.id);
+    });
   }
 
   @override
@@ -97,75 +142,10 @@ class RoomClientSocketImpl extends ChangeNotifier implements RoomClient {
     _signalTimer.cancel();
     super.dispose();
   }
-
-  @override
-  Future sendMessage(String message) async => _socket.emit('msg', message);
-
-  @override
-  Future sendTyping() async => _socket.emit('typing', _socket.id);
-
-  @override
-  Future sendTypingCancel() async => _socket.emit('typing_cancel', _socket.id);
-
-  // RTC section
-  @override
-  Future<String> sendWarmupAck({
-    required String memberId,
-  }) async {
-    final c = Completer<String>();
-    Timer(const Duration(seconds: 2), () {
-      if (!c.isCompleted) c.complete('timeout');
-    });
-
-    _socket.emitWithAck('rtc_warmup_ack', {
-      'from': _socket.id,
-      'to': memberId,
-    }, ack: (String data) {
-      if (!c.isCompleted) c.complete(data);
-    });
-
-    return c.future;
-  }
-
-  @override
-  Future sendOffer({
-    required String memberId,
-    required RTCSessionDescription offer,
-  }) async {
-    _socket.emit('rtc_offer', {
-      'from': _socket.id,
-      'to': memberId,
-      'offer': offer.toMap(),
-    });
-  }
-
-  @override
-  Future sendAnswer({
-    required String memberId,
-    required RTCSessionDescription answer,
-  }) async {
-    _socket.emit('rtc_answer', {
-      'from': _socket.id,
-      'to': memberId,
-      'answer': answer.toMap(),
-    });
-  }
-
-  @override
-  Future sendCandidate({
-    required String memberId,
-    required PcType pcType,
-    required RTCIceCandidate candidate,
-  }) async {
-    _socket.emit('rtc_candidate', {
-      'from': _socket.id,
-      'to': memberId,
-      'pc_type': pcType.name,
-      'candidate': candidate.toMap(),
-    });
-  }
 }
 
+/// Parses raw socket events into [RoomEvent]
+/// Returns null if event is not supported
 RoomEvent? _eventParser({required String event, required dynamic data}) {
   try {
     switch (event) {

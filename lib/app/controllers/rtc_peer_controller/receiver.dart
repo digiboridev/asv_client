@@ -29,7 +29,7 @@ class Receiver {
   Future _setup() async {
     debugPrint('rx setting up');
 
-    _pc = await createPeerConnection(kPeerConfig);
+    _pc = await createPeerConnection(kRTCPeerConfig);
 
     _pc!.onIceCandidate = (candidate) {
       debugPrint('tx onIceCandidate: $candidate');

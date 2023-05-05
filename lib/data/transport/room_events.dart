@@ -9,6 +9,7 @@ class ConnectionStateChanged extends RoomEvent {
   final RoomConnectionState state;
 }
 
+/// Presence Events
 abstract class PresenceEvent extends RoomEvent {
   PresenceEvent({required this.client, required this.memberId, required this.time});
   final Client client;
@@ -28,6 +29,7 @@ class ClientSignal extends PresenceEvent {
   ClientSignal({required super.client, required super.memberId, required super.time});
 }
 
+/// Chat Events
 abstract class ChatEvent extends RoomEvent {
   ChatEvent({required this.client});
   final Client client;
@@ -47,6 +49,7 @@ class ClientTypingCancel extends ChatEvent {
   ClientTypingCancel({required super.client});
 }
 
+/// RTC Events
 abstract class RTCEvent extends RoomEvent {
   RTCEvent({required this.memberId});
   final String memberId;

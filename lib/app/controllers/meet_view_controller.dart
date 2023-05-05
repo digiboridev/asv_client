@@ -12,20 +12,25 @@ class MeetViewController extends ChangeNotifier {
   MeetViewController({
     required RoomClient roomClient,
   }) : _roomClient = roomClient {
-    _eventSubscription = _roomClient.eventStream.listen(roomEventHandler);
+    _eventSubscription = _roomClient.eventStream.listen(_roomEventHandler);
   }
 
   final RoomClient _roomClient;
   late final StreamSubscription<RoomEvent> _eventSubscription;
-
   final List<RTCPeerController> _peers = [];
-  List<RTCPeerController> get peers => List.unmodifiable(_peers);
-
   RTCStreamTrack? _audioTrack;
   RTCStreamTrack? _videoTrack;
+
+  /// Current active audio track.
   RTCStreamTrack? get audioTrack => _audioTrack;
+
+  /// Current active video track.
   RTCStreamTrack? get videoTrack => _videoTrack;
 
+  /// List of peer connections.
+  List<RTCPeerController> get peers => List.unmodifiable(_peers);
+
+  /// Enables audio and sends track to all peer connections.
   Future enableAudio() async {
     if (_audioTrack != null) await disableVideo();
 
@@ -40,6 +45,7 @@ class MeetViewController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Disables audio and remove track from all peer connections.
   Future disableAudio() async {
     _audioTrack?.track.stop();
     _audioTrack = null;
@@ -49,6 +55,7 @@ class MeetViewController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enables camera video and sends track to all peer connections.
   Future enableCamera() async {
     if (_videoTrack != null) await disableVideo();
 
@@ -63,6 +70,7 @@ class MeetViewController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Enables screen share video and remove track from all peer connections.
   Future enableDisplay() async {
     if (_videoTrack != null) await disableVideo();
 
@@ -77,6 +85,7 @@ class MeetViewController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Disables video and remove track from all peer connections.
   Future disableVideo() async {
     await _videoTrack?.track.stop();
     _videoTrack = null;
@@ -86,7 +95,8 @@ class MeetViewController extends ChangeNotifier {
     notifyListeners();
   }
 
-  roomEventHandler(RoomEvent event) {
+  _roomEventHandler(RoomEvent event) {
+    // Creates a new peer connection for new client that joins the room.
     if (event is ClientJoin) {
       RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       if (peer != null) return;
@@ -99,6 +109,7 @@ class MeetViewController extends ChangeNotifier {
       ));
     }
 
+    // Creates a new peer connection for client that already in the room.
     if (event is ClientSignal) {
       RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       if (peer != null) return;
@@ -111,12 +122,15 @@ class MeetViewController extends ChangeNotifier {
       ));
     }
 
+    // Removes peer connection for client that leaves the room.
     if (event is ClientLeave) {
       RTCPeerController? peer = _peers.firstWhereOrNull((connection) => connection.memberId == event.memberId);
       peer?.dispose();
       _peers.remove(peer);
     }
 
+    // Removes all peer connections when youre disconnected for prevent collisions.
+    // When room connection is restored, new fresh peer connections will be created for all clients in the room.
     if (event is ConnectionStateChanged && event.state == RoomConnectionState.disconnected) {
       for (var peer in _peers) {
         peer.dispose();

@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:asv_client/data/models/chat_entries.dart';
 import 'package:asv_client/data/models/client.dart';
@@ -15,12 +14,23 @@ class ChatViewController extends ChangeNotifier {
 
   final RoomClient _roomClient;
   late final StreamSubscription _roomEventSubscription;
-
   final List<ChatEntry> _chatHistory = [];
+  final Set<Client> _typingClients = {};
+
+  /// List of all [ChatEntry]s in the chat history.
   List<ChatEntry> get chatHistory => _chatHistory;
 
-  final Set<Client> _typingClients = {};
+  /// List of all [Client]s currently typing in the chat.
   Set<Client> get typingClients => _typingClients;
+
+  /// Sends a start typing event to the room.
+  startedTyping() => _roomClient.sendTyping();
+
+  /// Sends a stop typing event to the room.
+  stoppedTyping() => _roomClient.sendTypingCancel();
+
+  /// Sends a new chat message to the room.
+  sendMessage(String message) => _roomClient.sendMessage(message);
 
   _roomEventsHandler(RoomEvent event) {
     if (event is NewMessage) {
@@ -46,18 +56,6 @@ class ChatViewController extends ChangeNotifier {
     }
 
     notifyListeners();
-  }
-
-  startedTyping() {
-    _roomClient.sendTyping();
-  }
-
-  stoppedTyping() {
-    _roomClient.sendTypingCancel();
-  }
-
-  sendMessage(String message) {
-    _roomClient.sendMessage(message);
   }
 
   @override
