@@ -42,39 +42,28 @@ class ChatHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     List<ChatEntry> chatHistory = ChatViewControllerProvider.watch(context).chatHistory;
 
-    return ShaderMask(
-      shaderCallback: (Rect rect) {
-        return const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.purple, Colors.transparent, Colors.transparent, Colors.purple],
-          stops: [0.0, 0.03, 0.95, 1.0],
-        ).createShader(rect);
+    return ListView.separated(
+      reverse: true,
+      physics: BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 12, top: 12),
+      itemCount: chatHistory.length,
+      itemBuilder: (context, index) {
+        final chatEntry = chatHistory.reversed.toList()[index];
+
+        if (chatEntry is Message) {
+          return MessageTile(message: chatEntry);
+        }
+
+        if (chatEntry is UserJoined) {
+          return JoinTile(event: chatEntry);
+        }
+
+        if (chatEntry is UserLeft) {
+          return LeaveTile(event: chatEntry);
+        }
+        return const SizedBox();
       },
-      blendMode: BlendMode.dstOut,
-      child: ListView.separated(
-        reverse: true,
-        physics: BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 12, top: 12),
-        itemCount: chatHistory.length,
-        itemBuilder: (context, index) {
-          final chatEntry = chatHistory.reversed.toList()[index];
-
-          if (chatEntry is Message) {
-            return MessageTile(message: chatEntry);
-          }
-
-          if (chatEntry is UserJoined) {
-            return JoinTile(event: chatEntry);
-          }
-
-          if (chatEntry is UserLeft) {
-            return LeaveTile(event: chatEntry);
-          }
-          return const SizedBox();
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-      ),
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
     );
   }
 }

@@ -92,6 +92,7 @@ class MeetViewController extends ChangeNotifier {
       if (peer != null) return;
       _peers.add(RTCPeerController(
         memberId: event.memberId,
+        memberName: event.client.name,
         roomClient: _roomClient,
         audioTrack: _audioTrack,
         videoTrack: _videoTrack,
@@ -103,6 +104,7 @@ class MeetViewController extends ChangeNotifier {
       if (peer != null) return;
       _peers.add(RTCPeerController(
         memberId: event.memberId,
+        memberName: event.client.name,
         roomClient: _roomClient,
         audioTrack: _audioTrack,
         videoTrack: _videoTrack,

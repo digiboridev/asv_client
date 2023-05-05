@@ -207,7 +207,7 @@ class _PeerTileState extends State<PeerTile> {
             children: [
               Expanded(
                 child: Text(
-                  widget.peer.memberId,
+                  widget.peer.memberName,
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),

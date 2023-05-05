@@ -11,6 +11,7 @@ import 'package:asv_client/data/transport/room_client.dart';
 class RTCPeerController extends ChangeNotifier {
   RTCPeerController({
     required this.memberId,
+    required this.memberName,
     required this.roomClient,
     RTCStreamTrack? audioTrack,
     RTCStreamTrack? videoTrack,
@@ -34,6 +35,7 @@ class RTCPeerController extends ChangeNotifier {
   }
 
   final String memberId;
+  final String memberName;
   final RoomClient roomClient;
   late final Transmitter _transmitter;
   late final Receiver _receiver;
