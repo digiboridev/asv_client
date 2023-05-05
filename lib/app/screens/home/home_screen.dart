@@ -36,7 +36,7 @@ class _HomeState extends State<Home> {
               Padding(
                   padding: const EdgeInsets.all(8),
                   child: const Text(
-                    '1.0.54',
+                    '1.0.55',
                     style: TextStyle(color: Colors.blueGrey),
                   )),
             ]),
