@@ -7,7 +7,8 @@ class Client extends Equatable {
 
   /// Creates a new client with a unique id and the base name
   factory Client.empty() {
-    return Client._(clientId: Uuid().v4(), name: 'Anonimous');
+    String uuid = Uuid().v4();
+    return Client._(clientId: uuid, name: 'Guest${uuid.hashCode.toString().substring(0, 4)}');
   }
 
   final String clientId;
