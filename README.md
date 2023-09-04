@@ -1,16 +1,21 @@
-# asv_client
+### ASV_Client
+Cross-platform client application for ASV project based on Flutter/Dart.
 
-A new Flutter project.
+### About ###
+Absolutely secure video chat is an pure Web-RTC-based video conferencing and messaging application. The main feature is that it is completely anonymous, free and does't store any data on the server side.
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
+### Things to notice
+- Custom routing using Navigator 2.0 with url encoding and deep linking.
+- Custom dependency injection
+- Custom state management using ChangeNotifier with InheritedWidget
+- Custom WebRTC signaling server based on Node.js typescript and socket.io.
+- Bi-directional multi-peer video/audio communication.
+- Solid connection handling with Unified Plan SDP, connection recovery and modern ICE candidates negotiation.
+- Unique WebRTC implementation without any libs, no spagetti or 1000+ lines of crap even for above mentioned features.
 
-A few resources to get you started if this is your first Flutter project:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Try it out
+[ASV Client Web](https://asv-client.onrender.com/)
+
