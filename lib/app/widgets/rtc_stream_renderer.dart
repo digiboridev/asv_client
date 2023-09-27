@@ -24,6 +24,48 @@ class RTCStreamRenderer extends StatefulWidget {
 
 class _RTCStreamRendererState extends State<RTCStreamRenderer> {
   late final RTCVideoRenderer rtcVideoRenderer;
+  late final bool hasVideo = widget.stream.getVideoTracks().isNotEmpty;
+
+  OverlayEntry? overlayEntry;
+
+  openFullScreenOverlay() {
+    if (!hasVideo) return;
+    if (overlayEntry != null) return;
+
+    OverlayState overlayState = Overlay.of(context);
+    overlayEntry = OverlayEntry(builder: (context) {
+      return Stack(
+        children: [
+          Container(
+            padding: EdgeInsets.all(24),
+            color: Colors.black.withOpacity(0.9),
+            child: RTCVideoView(
+              rtcVideoRenderer,
+              mirror: widget.mirror,
+            ),
+          ),
+          Positioned(
+            child: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.white),
+                onPressed: closeOverlay,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+
+    overlayState.insert(overlayEntry!);
+    setState(() {});
+  }
+
+  closeOverlay() {
+    overlayEntry?.remove();
+    overlayEntry = null;
+    setState(() {});
+  }
 
   @override
   void initState() {
@@ -38,6 +80,7 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
     super.dispose();
     rtcVideoRenderer.srcObject = null;
     rtcVideoRenderer.dispose();
+    overlayEntry?.remove();
   }
 
   RTCVideoViewObjectFit get _objectFit {
@@ -51,11 +94,26 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
 
   @override
   Widget build(BuildContext context) {
+    if (overlayEntry != null) {
+      return SizedBox(
+        width: 0,
+        height: 0,
+      );
+    }
+
     return SizedBox.expand(
-        child: RTCVideoView(
-      rtcVideoRenderer,
-      objectFit: _objectFit,
-      mirror: widget.mirror,
-    ));
+      child: GestureDetector(
+        onDoubleTap: () => openFullScreenOverlay(),
+        child: Tooltip(
+          waitDuration: Duration(seconds: 2),
+          message: 'Double tap to open full screen',
+          child: RTCVideoView(
+            rtcVideoRenderer,
+            objectFit: _objectFit,
+            mirror: widget.mirror,
+          ),
+        ),
+      ),
+    );
   }
 }

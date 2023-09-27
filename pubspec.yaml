@@ -1,7 +1,7 @@
 name: asv_client
 description: Free chat and video calls
 publish_to: 'none'
-version: 1.0.58+58
+version: 1.0.59+59
 
 environment:
   sdk: '>=2.19.2 <3.0.0'

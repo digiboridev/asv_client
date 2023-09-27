@@ -40,3 +40,6 @@ class _TheAppState extends State<TheApp> {
     );
   }
 }
+
+
+// TODO selectable text in chat

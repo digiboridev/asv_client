@@ -58,26 +58,15 @@ class ClientTile extends StatefulWidget {
 class _ClientTileState extends State<ClientTile> {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.amber,
-      child: Stack(
-        children: [
-          SizedBox.expand(
-            child: placeholder(),
-          ),
-          Builder(builder: (_) {
-            RTCStreamTrack? videoTrack = widget._meetViewController.videoTrack;
-            if (videoTrack != null) {
-              return RTCStreamRenderer(
-                stream: videoTrack.stream,
-                mirror: true,
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-          overlay(),
-        ],
-      ),
+    RTCStreamTrack? videoTrack = widget._meetViewController.videoTrack;
+
+    return Stack(
+      children: [
+        SizedBox.expand(child: Container(color: Colors.amber)),
+        if (videoTrack != null) RTCStreamRenderer(key: ValueKey(videoTrack.stream.id), stream: videoTrack.stream),
+        if (videoTrack == null) SizedBox.expand(child: placeholder()),
+        overlay(),
+      ],
     );
   }
 
@@ -140,32 +129,23 @@ class _PeerTileState extends State<PeerTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        color: Colors.pink,
-        child: AnimatedBuilder(
-          animation: widget.peer,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                SizedBox.expand(
-                  child: placeholder(),
-                ),
-                if (widget.peer.audioStream != null)
-                  RTCStreamRenderer(
-                    key: ValueKey(widget.peer.audioStream!.id),
-                    stream: widget.peer.audioStream!,
-                  ),
-                if (widget.peer.videoStream != null)
-                  RTCStreamRenderer(
-                    key: ValueKey(widget.peer.videoStream!.id),
-                    stream: widget.peer.videoStream!,
-                    fit: fit,
-                  ),
-                overlay(),
-              ],
-            );
-          },
-        ));
+    return GestureDetector(
+      // onDoubleTap: () => showFS(),
+      child: AnimatedBuilder(
+        animation: widget.peer,
+        builder: (context, child) {
+          return Stack(
+            children: [
+              SizedBox.expand(child: Container(color: Colors.pink)),
+              if (widget.peer.audioStream != null) RTCStreamRenderer(key: ValueKey(widget.peer.audioStream!.id), stream: widget.peer.audioStream!),
+              if (widget.peer.videoStream != null) RTCStreamRenderer(key: ValueKey(widget.peer.videoStream!.id), stream: widget.peer.videoStream!, fit: fit),
+              if (widget.peer.videoStream == null) SizedBox.expand(child: placeholder()),
+              overlay(),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Color signalColor(RTCConnectionState state) {
