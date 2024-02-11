@@ -61,6 +61,17 @@ class Receiver {
       if (track.streams.isEmpty) return;
 
       if (track.track.kind == 'audio') {
+        debugPrint('rx audio onTrack');
+
+        _audioStream = track.streams.first;
+        notifyListeners();
+
+        track.track.onEnded = () {
+          debugPrint('rx audio onEnded');
+          _audioStream = null;
+          notifyListeners();
+        };
+
         track.track.onMute = () {
           debugPrint('rx audio onMuted');
           _audioStream = null;
@@ -72,17 +83,42 @@ class Receiver {
           notifyListeners();
         };
       }
+
       if (track.track.kind == 'video') {
+        debugPrint('rx video onTrack');
+
+        _videoStream = track.streams.first;
+        notifyListeners();
+
+        track.track.onEnded = () {
+          debugPrint('rx video onEnded');
+          _videoStream = null;
+          notifyListeners();
+        };
+
         track.track.onMute = () {
           debugPrint('rx video onMuted');
           _videoStream = null;
           notifyListeners();
         };
+
         track.track.onUnMute = () {
           debugPrint('rx video onUnmuted');
           _videoStream = track.streams.first;
           notifyListeners();
         };
+      }
+    };
+
+    _pc!.onRemoveTrack = (s, track) {
+      debugPrint('rx onRemoveTrack');
+      if (track.kind == 'audio') {
+        _audioStream = null;
+        notifyListeners();
+      }
+      if (track.kind == 'video') {
+        _videoStream = null;
+        notifyListeners();
       }
     };
   }
