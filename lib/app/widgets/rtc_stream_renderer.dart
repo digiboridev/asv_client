@@ -71,8 +71,7 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
   void initState() {
     super.initState();
     rtcVideoRenderer = RTCVideoRenderer();
-    rtcVideoRenderer.initialize();
-    rtcVideoRenderer.srcObject = widget.stream;
+    rtcVideoRenderer.initialize().then((_) => rtcVideoRenderer.srcObject = widget.stream);
   }
 
   @override
