@@ -34,26 +34,28 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
 
     OverlayState overlayState = Overlay.of(context);
     overlayEntry = OverlayEntry(builder: (context) {
-      return Stack(
-        children: [
-          Container(
-            padding: EdgeInsets.all(24),
-            color: Colors.black.withOpacity(0.9),
-            child: RTCVideoView(
-              rtcVideoRenderer,
-              mirror: widget.mirror,
-            ),
-          ),
-          Positioned(
-            child: Material(
-              color: Colors.transparent,
-              child: IconButton(
-                icon: Icon(Icons.close, color: Colors.white),
-                onPressed: closeOverlay,
+      return SafeArea(
+        child: Stack(
+          children: [
+            Container(
+              padding: EdgeInsets.all(24),
+              color: Colors.black.withOpacity(0.9),
+              child: RTCVideoView(
+                rtcVideoRenderer,
+                mirror: widget.mirror,
               ),
             ),
-          ),
-        ],
+            Positioned(
+              child: Material(
+                color: Colors.transparent,
+                child: IconButton(
+                  icon: Icon(Icons.close, color: Colors.white),
+                  onPressed: closeOverlay,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     });
 

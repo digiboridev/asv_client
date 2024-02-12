@@ -73,6 +73,7 @@ class _RoomScreenState extends State<RoomScreen> {
 
   Widget drawer() {
     return SizedBox(
+      height: double.infinity,
       width: 300,
       child: ChatViewControllerProvider(
         notifier: chatViewController,

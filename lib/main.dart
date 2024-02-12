@@ -29,7 +29,7 @@ class _TheAppState extends State<TheApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'ASV Client',
+      title: 'ASV Chat',
       theme: ThemeData(primarySwatch: Colors.pink),
       backButtonDispatcher: RootBackButtonDispatcher(),
       routeInformationParser: rootRouter.parser,

@@ -10,26 +10,30 @@ class ChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.025),
-            blurRadius: 8,
-            spreadRadius: 4,
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.025),
+              blurRadius: 8,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              const Text('Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              const TypingClients(),
+              const Expanded(child: ChatHistory()),
+              const MessageField(),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          const Text('Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          const TypingClients(),
-          const Expanded(child: ChatHistory()),
-          const MessageField(),
-        ],
+        ),
       ),
     );
   }
