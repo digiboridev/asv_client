@@ -73,7 +73,14 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
   void initState() {
     super.initState();
     rtcVideoRenderer = RTCVideoRenderer();
-    rtcVideoRenderer.initialize().then((_) => rtcVideoRenderer.srcObject = widget.stream);
+    WidgetsBinding.instance.addPostFrameCallback((_) => init());
+  }
+
+  init() async {
+    if (!mounted) return;
+    await rtcVideoRenderer.initialize();
+    if (!mounted) return;
+    setState(() => rtcVideoRenderer.srcObject = widget.stream);
   }
 
   @override
@@ -96,10 +103,7 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
   @override
   Widget build(BuildContext context) {
     if (overlayEntry != null) {
-      return SizedBox(
-        width: 0,
-        height: 0,
-      );
+      return SizedBox(width: 0, height: 0);
     }
 
     return SizedBox.expand(
@@ -108,11 +112,7 @@ class _RTCStreamRendererState extends State<RTCStreamRenderer> {
         child: Tooltip(
           waitDuration: Duration(seconds: 2),
           message: 'Double tap to open full screen',
-          child: RTCVideoView(
-            rtcVideoRenderer,
-            objectFit: _objectFit,
-            mirror: widget.mirror,
-          ),
+          child: RTCVideoView(rtcVideoRenderer, objectFit: _objectFit, mirror: widget.mirror),
         ),
       ),
     );
