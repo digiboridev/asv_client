@@ -9,10 +9,10 @@ abstract class AppPath {
 
   factory AppPath.fromUri(Uri uri) {
     if (uri.pathSegments.isNotEmpty) {
-      if (uri.pathSegments.first == HomePath.path) {
+      if (uri.pathSegments.first == HomePath.segment) {
         return HomePath();
       }
-      if (uri.pathSegments.first == RoomPath.path) {
+      if (uri.pathSegments.first == RoomPath.segment) {
         if (uri.queryParameters.containsKey('roomId') && uri.queryParameters['roomId']!.isNotEmpty) {
           return RoomPath(uri.queryParameters['roomId']!);
         }
@@ -25,23 +25,23 @@ abstract class AppPath {
 
 class HomePath extends AppPath {
   HomePath();
-  static String get path => 'home';
+  static String get segment => 'home';
 
   @override
   Page get page => HomePage();
 
   @override
-  Uri get uri => Uri(path: path);
+  Uri get uri => Uri(path: '/$segment');
 }
 
 class RoomPath extends AppPath {
   RoomPath(this.roomId);
   final String roomId;
-  static String get path => 'room';
+  static String get segment => 'room';
 
   @override
   Page get page => RoomPage(key: ValueKey(roomId), roomId: roomId);
 
   @override
-  Uri get uri => Uri(path: path, queryParameters: {'roomId': roomId});
+  Uri get uri => Uri(path: '/$segment', queryParameters: {'roomId': roomId});
 }
