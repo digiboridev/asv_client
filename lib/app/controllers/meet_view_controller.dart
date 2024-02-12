@@ -1,11 +1,13 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
+import 'dart:io';
 import 'package:asv_client/app/controllers/rtc_peer_controller/peer_controller.dart';
 import 'package:asv_client/app/controllers/rtc_peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:asv_client/utils/first_where_or_null.dart';
 import 'package:flutter/material.dart';
 import 'package:asv_client/data/transport/room_client.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MeetViewController extends ChangeNotifier {
@@ -74,6 +76,11 @@ class MeetViewController extends ChangeNotifier {
   Future enableDisplay() async {
     if (_videoTrack != null) await disableVideo();
 
+    if (Platform.isAndroid && !FlutterBackground.isBackgroundExecutionEnabled) {
+      final foreEnabled = await startForegroundService();
+      if (!foreEnabled) throw Exception('Failed to start projection service');
+    }
+
     final stream = await navigator.mediaDevices.getDisplayMedia({'audio': false, 'video': true});
     final track = stream.getVideoTracks().first;
     track.onEnded = () => disableVideo();
@@ -87,6 +94,10 @@ class MeetViewController extends ChangeNotifier {
 
   /// Disables video and remove track from all peer connections.
   Future disableVideo() async {
+    if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
+      FlutterBackground.disableBackgroundExecution();
+    }
+
     await _videoTrack?.track.stop();
     _videoTrack = null;
     for (var peer in _peers) {
@@ -151,4 +162,15 @@ class MeetViewController extends ChangeNotifier {
     _videoTrack?.track.stop();
     super.dispose();
   }
+}
+
+Future<bool> startForegroundService() async {
+  final androidConfig = FlutterBackgroundAndroidConfig(
+    notificationTitle: 'Service is running',
+    notificationText: 'Tap to return to the app',
+    notificationImportance: AndroidNotificationImportance.Default,
+    notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'drawable'), // Default is ic_launcher from folder mipmap
+  );
+  await FlutterBackground.initialize(androidConfig: androidConfig);
+  return FlutterBackground.enableBackgroundExecution();
 }
