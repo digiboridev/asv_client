@@ -30,7 +30,10 @@ migrate_working_dir/
 .packages
 .pub-cache/
 .pub/
-/build/
+/build/*
+# ignore web build for deployment
+!/build/web/
+
 # /build/macos
 
 # Symbolication related
@@ -45,6 +48,6 @@ app.*.map.json
 /android/app/release
 
 
-!/build/web/
+
 .env
 *.g.dart
