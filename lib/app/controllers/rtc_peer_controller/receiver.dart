@@ -52,7 +52,7 @@ class Receiver {
         default:
           _connectionState = RTCConnectionState.idle;
       }
-      notifyListeners();
+      if (!_disposed) notifyListeners();
     };
 
     _pc!.onTrack = (track) async {

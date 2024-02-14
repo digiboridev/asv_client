@@ -84,7 +84,8 @@ class Transmitter {
         default:
           _connectionState = RTCConnectionState.idle;
       }
-      notifyListeners();
+
+      if (!_disposed) notifyListeners();
     };
 
     attachAudioTrack();

@@ -23,24 +23,26 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SizedBox.expand(
-        child: Column(
-          children: [
-            Spacer(),
-            ElevatedButton(
-                onPressed: () => toRoom(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: const Text('JOIN ROOM'),
-                )),
-            Spacer(),
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Padding(padding: const EdgeInsets.all(8), child: appVersion()),
-              ],
-            ),
-          ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              Spacer(),
+              ElevatedButton(
+                  onPressed: () => toRoom(context),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: const Text('JOIN ROOM'),
+                  )),
+              Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Padding(padding: const EdgeInsets.all(8), child: appVersion()),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

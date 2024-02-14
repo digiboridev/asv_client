@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 class RootRouterParser extends RouteInformationParser<AppPath> {
   @override
   Future<AppPath> parseRouteInformation(RouteInformation routeInformation) async {
-    final uri = Uri.parse(routeInformation.location!);
-    return AppPath.fromUri(uri);
+    return AppPath.fromUri(routeInformation.uri);
   }
 
   @override
   RouteInformation restoreRouteInformation(AppPath configuration) {
-    String location = '/${configuration.uri}';
-    return RouteInformation(location: location);
+    return RouteInformation(uri: configuration.uri);
   }
 }
 
