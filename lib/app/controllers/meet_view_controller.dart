@@ -5,7 +5,7 @@ import 'package:asv_client/app/controllers/rtc_peer_controller/peer_controller.d
 import 'package:asv_client/app/controllers/rtc_peer_controller/rtc_stream_track.dart';
 import 'package:asv_client/data/transport/room_events.dart';
 import 'package:asv_client/utils/first_where_or_null.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:asv_client/data/transport/room_client.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -76,7 +76,7 @@ class MeetViewController extends ChangeNotifier {
   Future enableDisplay() async {
     if (_videoTrack != null) await disableVideo();
 
-    if (Platform.isAndroid && !FlutterBackground.isBackgroundExecutionEnabled) {
+    if (!kIsWeb && Platform.isAndroid && !FlutterBackground.isBackgroundExecutionEnabled) {
       final foreEnabled = await startForegroundService();
       if (!foreEnabled) throw Exception('Failed to start projection service');
     }
@@ -94,7 +94,7 @@ class MeetViewController extends ChangeNotifier {
 
   /// Disables video and remove track from all peer connections.
   Future disableVideo() async {
-    if (Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
+    if (!kIsWeb && Platform.isAndroid && FlutterBackground.isBackgroundExecutionEnabled) {
       FlutterBackground.disableBackgroundExecution();
     }
 
