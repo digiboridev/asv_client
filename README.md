@@ -1,10 +1,10 @@
 
 <p align="center">
-  <img width="200" src="media/app_icon/app_icon.png"/>
+  <img width="100" src="media/app_icon/app_icon.png"/>
 </p>
 
 <h1 align="center">
-  ASV_Client
+  ASV Client
 </h1>
 <h6 align="center">
   Absolutely secure video chat
@@ -12,7 +12,7 @@
 
 
 <p align="center">
-  <img width="1024" src="media/preview/multi.png"/>
+  <img width="1024" src="media/preview/preview_ultrawide.png"/>
 </p>
 
 
