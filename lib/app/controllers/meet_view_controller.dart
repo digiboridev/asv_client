@@ -168,8 +168,11 @@ Future<bool> startForegroundService() async {
   final androidConfig = FlutterBackgroundAndroidConfig(
     notificationTitle: 'Service is running',
     notificationText: 'Tap to return to the app',
-    notificationImportance: AndroidNotificationImportance.Default,
-    notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'drawable'), // Default is ic_launcher from folder mipmap
+    notificationImportance: AndroidNotificationImportance.normal,
+    notificationIcon: AndroidResource(
+      name: 'ic_launcher',
+      defType: 'drawable',
+    ), // Default is ic_launcher from folder mipmap
   );
   await FlutterBackground.initialize(androidConfig: androidConfig);
   return FlutterBackground.enableBackgroundExecution();
